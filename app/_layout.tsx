@@ -13,6 +13,7 @@ export default function RootLayout() {
       <Stack.Screen name="report-visit" />
       <Stack.Screen name="add-expense" />
       <Stack.Screen name="add-leave" />
+      <Stack.Screen name="list-leave" />
     </Stack>
   );
 }

@@ -48,7 +48,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* <Tabs.Screen
+      <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
@@ -56,7 +56,7 @@ export default function TabLayout() {
             <Feather name="user" size={size} color={color} />
           ),
         }}
-      /> */}
+      />
     </Tabs>
   );
 }
