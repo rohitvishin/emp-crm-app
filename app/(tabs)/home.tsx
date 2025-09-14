@@ -25,12 +25,12 @@ export default function HomeScreen() {
 
         {/* Check In / Out */}
         <View style={styles.row}>
-          <TouchableOpacity style={[styles.checkBtn, { backgroundColor: "#4CAF50" }]}>
+          <TouchableOpacity style={[styles.checkBtn, { backgroundColor: "#b0b2b0ff" }]}>
             <Feather name="clock" size={22} color="#444" />
             <Text style={styles.checkText}>Check In</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.checkBtn, { backgroundColor: "#f44336" }]}>
+          <TouchableOpacity style={[styles.checkBtn, { backgroundColor: "#b0b2b0ff" }]}>
             <Feather name="clock" size={22} color="#444" />
             <Text style={styles.checkText}>Check Out</Text>
           </TouchableOpacity>
@@ -43,13 +43,13 @@ export default function HomeScreen() {
           <Feather name="chevron-right" size={20} color="#999" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/list-expense")}>
           <MaterialIcons name="receipt" size={20} color="#444" />
           <Text style={styles.menuText}>Expenses</Text>
           <Feather name="chevron-right" size={20} color="#999" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/add-leave")}>
           <MaterialIcons name="event" size={20} color="#444" />
           <Text style={styles.menuText}>Leave Requests</Text>
           <Feather name="chevron-right" size={20} color="#999" />
@@ -70,9 +70,9 @@ avatar: {
     height: 50,
     borderRadius: 25,
   },
-  container: { flex: 1, backgroundColor: "#ddf0ec", padding: 20 },
+  container: { flex: 1, backgroundColor: "#fff", padding: 20 },
   title: { fontSize: 22, fontWeight: "600", marginBottom: 20, textAlign: "center" },
-  card: { backgroundColor: "#ddf0ec", borderRadius: 12, padding: 20 },
+  card: { backgroundColor: "#fff", borderRadius: 12, padding: 20 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   greeting: { fontSize: 18, fontWeight: "600" },
   username: { fontSize: 14, color: "#777" },

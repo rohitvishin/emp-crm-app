@@ -1,11 +1,20 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function VisitDetailScreen() {
+  const [isStarted, setIsStarted] = useState(false);
   const router = useRouter();
-
+  const handleVisitToggle = () => {
+    if (isStarted) {
+      // End Visit → go to Report screen
+      router.push("/report-visit");
+    } else {
+      // Start Visit → just toggle state
+      setIsStarted(true);
+    }
+  };
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -62,9 +71,9 @@ export default function VisitDetailScreen() {
       </View>
 
       {/* Start Visit Button */}
-      <TouchableOpacity style={styles.startBtn}>
+      <TouchableOpacity style={styles.startBtn} onPress={handleVisitToggle}>
         <Feather name="play" size={18} color="#fff" />
-        <Text style={styles.startBtnText}>Start Visit</Text>
+        <Text style={styles.startBtnText}>{isStarted ? "End Visit" : "Start Visit"}</Text>
       </TouchableOpacity>
     </View>
   );
