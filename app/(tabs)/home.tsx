@@ -1,7 +1,8 @@
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -28,12 +29,16 @@ export default function HomeScreen() {
 
         {/* Check In / Out */}
         <View style={styles.row}>
-          <TouchableOpacity style={[styles.checkBtn, { backgroundColor: "#b0b2b0ff" }]}>
-            <Feather name="clock" size={22} color="#444" />
+          <TouchableOpacity style={[styles.checkBtn, { backgroundColor: "#e9ffcdff" }]}>
+             <Image
+            source={{ uri:"https://www.iconpacks.net/icons/1/free-user-login-icon-305-thumb.png"}}
+            style={{ width: 24, height: 24 }}
+            />
+            {/* <Feather name="clock" size={22} color="#444" /> */}
             <Text style={styles.checkText}>Check In</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.checkBtn, { backgroundColor: "#b0b2b0ff" }]}>
+          <TouchableOpacity style={[styles.checkBtn, { backgroundColor: "#ffe0e0ff" }]}>
             <Feather name="clock" size={22} color="#444" />
             <Text style={styles.checkText}>Check Out</Text>
           </TouchableOpacity>
