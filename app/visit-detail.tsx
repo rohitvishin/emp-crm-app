@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function VisitDetailScreen() {
   const [isStarted, setIsStarted] = useState(false);
@@ -16,7 +17,7 @@ export default function VisitDetailScreen() {
     }
   };
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -75,7 +76,7 @@ export default function VisitDetailScreen() {
         <Feather name="play" size={18} color="#fff" />
         <Text style={styles.startBtnText}>{isStarted ? "End Visit" : "Start Visit"}</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 

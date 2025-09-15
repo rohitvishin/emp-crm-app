@@ -1,7 +1,9 @@
 import { Feather, MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -17,12 +19,16 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Login screen</Text>
-
-      <View style={styles.logoWrapper}>
-        <MaterialIcons name="login" size={40} color="white" />
-      </View>
-
+      <View></View>
+      
+        <LinearGradient
+          colors={["#667eea", "#764ba2"]}
+          style={styles.logoWrapper}
+        >
+          <MaterialIcons name="login" size={40} color="white" />         
+        </LinearGradient>
+        
+     
       <Text style={styles.welcome}>Welcome Back</Text>
       <Text style={styles.subText}>Sign in to your employee account</Text>
 
@@ -56,10 +62,19 @@ export default function LoginScreen() {
             <Feather name={showPassword ? "eye-off" : "eye"} size={20} color="#999" />
           </TouchableOpacity>
         </View>
-
+        <LinearGradient
+          colors={["#667eea", "#764ba2"]}
+          style={{
+            paddingVertical: 12,
+            borderRadius: 8,
+            alignItems: "center",
+          }}
+        >
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Sign In</Text>
+                  <Text style={styles.buttonText}>Sign In</Text>
         </TouchableOpacity>
+        </LinearGradient>
+        
 
         <TouchableOpacity>
           <Text style={styles.forgot}>Forgot your password?</Text>
@@ -72,7 +87,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", alignItems: "center", padding: 20 },
   title: { fontSize: 22, fontWeight: "600", marginBottom: 20 },
-  logoWrapper: { width: 70, height: 70, borderRadius: 35, backgroundColor: "#000", justifyContent: "center", alignItems: "center", marginBottom: 15 },
+  logoWrapper: { width: 70, height: 70, borderRadius: 35, justifyContent: "center", alignItems: "center", marginBottom: 15 },
   welcome: { fontSize: 20, fontWeight: "700", marginBottom: 5 },
   subText: { fontSize: 14, color: "#777", marginBottom: 20 },
   formBox: { width: "100%", backgroundColor: "#f9f9f9", padding: 20, borderRadius: 10 },
@@ -82,7 +97,7 @@ const styles = StyleSheet.create({
   inputWrapper: { flexDirection: "row", alignItems: "center", borderColor: "#ddd", borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, marginBottom: 15, backgroundColor: "#fff" },
   icon: { marginRight: 8 },
   input: { flex: 1, height: 45 },
-  button: { backgroundColor: "#000", paddingVertical: 12, borderRadius: 8, alignItems: "center", marginBottom: 10 },
+  button: {borderRadius: 8, alignItems: "center", width: "100%"},
   buttonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
   forgot: { fontSize: 13, color: "#4A57FF", textAlign: "center", marginTop: 10 },
 });

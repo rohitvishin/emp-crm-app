@@ -4,13 +4,14 @@ import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const AddExpenseScreen = () => {
     const router = useRouter();
@@ -42,7 +43,7 @@ const AddExpenseScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -50,7 +51,7 @@ const AddExpenseScreen = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Expense</Text>
         <View style={{ width: 24 }} />
-    </View>
+       </View>
 
       {/* Category Dropdown */}
       <Text style={styles.label}>Category</Text>
@@ -101,7 +102,7 @@ const AddExpenseScreen = () => {
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
         <Text style={styles.submitText}>Submit Expense</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 16,
   },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: "#eee" },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: "#eee" },
   headerTitle: { fontSize: 18, fontWeight: "600" },
   label: {
     fontSize: 14,

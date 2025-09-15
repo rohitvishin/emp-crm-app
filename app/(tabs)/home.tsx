@@ -1,66 +1,113 @@
-import { Feather, MaterialIcons } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
+import {
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const checkBtnColor1= isCheckedIn? "#de8181ff" : "#667eea";
+  const checkBtnColor2= isCheckedIn? "#c63030ff" : "#764ba2";
+  const menuItems = [
+    { id: "1", title: "Field Visits", icon: "map-pin", route: "/field-visits" },
+    { id: "2", title: "Expenses", icon: "file-text", route: "/list-expense" },
+    { id: "3", title: "Leave Requests", icon: "calendar", route: "/list-leave" },
+  ];
 
+  const handleCheckInOut = () => {
+    const action = isCheckedIn ? "Check-Out" : "Check-In";
+
+    Alert.alert(
+      "Confirmation",
+      `Are you sure you want to ${action}?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          onPress: () => setIsCheckedIn(!isCheckedIn),
+        },
+      ]
+    );
+  };
   return (
     <SafeAreaView style={styles.container}>
-       {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Employee App</Text>
+      {/* Greeting */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>Good Morning</Text>
+          <Text style={styles.name}>John Smith</Text>
         </View>
-      <View style={styles.card}>
-        {/* Greeting */}
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.greeting}>Good Morning</Text>
-            <Text style={styles.username}>Bablu bhaiya</Text>
-          </View>
-          {/* <FontAwesome5 name="user-circle" size={40} color="#000" /> */}
-          <Image
-          source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }}
-          style={styles.avatar}
-        />
-        </View>
+        <LinearGradient
+          colors={["#667eea", "#764ba2"]}
+          style={styles.profileIcon}
+        >
+          <TouchableOpacity onPress={() => router.push("/profile")}>
+            <Feather name="user" size={24} color="#fff" />
+          </TouchableOpacity>
+        </LinearGradient>
+      </View>
+      {/* Dashboard Cards */}
+      <View style={styles.Card}>
+        <TouchableOpacity
+          style={styles.singleCard}
+          // onPress={() => router.push("/list-leave")}
+        >
+          <Text style={{ fontSize: 20, color: "#764ba2" }}>2</Text>
+          <Text style={styles.menuText}>Total Leaves</Text>
+        </TouchableOpacity>
 
-        {/* Check In / Out */}
-        <View style={styles.row}>
-          <TouchableOpacity style={[styles.checkBtn, { backgroundColor: "#e9ffcdff" }]}>
-             <Image
-            source={{ uri:"https://www.iconpacks.net/icons/1/free-user-login-icon-305-thumb.png"}}
-            style={{ width: 24, height: 24 }}
+        <TouchableOpacity
+          style={styles.singleCard}
+          // onPress={() => router.push("/field-visits")}
+        >
+          <Text style={{ fontSize: 20, color: "#764ba2" }}>2</Text>
+          <Text style={styles.menuText}>Total Visit</Text>
+        </TouchableOpacity>
+      </View>
+      
+      {/* Menu List */}
+      <FlatList
+        data={menuItems}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.menuCard}
+          onPress={() => router.push(item.route as any)}
+          >
+            <Feather name={item.icon as any} size={20} color="#764ba2" />
+            <Text style={styles.menuText}>{item.title}</Text>
+            <Feather
+              name="chevron-right"
+              size={20}
+              color="#999"
+              style={{ marginLeft: "auto" }}
             />
-            {/* <Feather name="clock" size={22} color="#444" /> */}
-            <Text style={styles.checkText}>Check In</Text>
           </TouchableOpacity>
+        )}
+      />
 
-          <TouchableOpacity style={[styles.checkBtn, { backgroundColor: "#ffe0e0ff" }]}>
-            <Feather name="clock" size={22} color="#444" />
-            <Text style={styles.checkText}>Check Out</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Menu items */}
-        <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/field-visits")}>
-          <MaterialIcons name="location-on" size={20} color="#444" />
-          <Text style={styles.menuText}>Field Visits</Text>
-          <Feather name="chevron-right" size={20} color="#999" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/list-expense")}>
-          <MaterialIcons name="receipt" size={20} color="#444" />
-          <Text style={styles.menuText}>Expenses</Text>
-          <Feather name="chevron-right" size={20} color="#999" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/list-leave")}>
-          <MaterialIcons name="event" size={20} color="#444" />
-          <Text style={styles.menuText}>Leave Requests</Text>
-          <Feather name="chevron-right" size={20} color="#999" />
+      {/* Check In / Out Buttons */}
+      <View style={styles.checkContainer}>
+        <TouchableOpacity onPress={handleCheckInOut} style={{ flex: 1, marginRight: 8 }}>
+          <LinearGradient
+            colors={[checkBtnColor1, checkBtnColor2]}
+            style={styles.checkButton}
+          >
+            <Feather name="clock" size={20} color="#fff" />
+            <Text style={styles.checkText}>{isCheckedIn ? "Check Out" : "Check In"}</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -68,33 +115,78 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "#f9f9f9",
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    marginBottom: 20,
   },
-  headerTitle: {
+  greeting: {
     fontSize: 18,
     fontWeight: "600",
     color: "#333",
   },
-  container: { flex: 1, backgroundColor: "#fff"},
-  title: { fontSize: 22, fontWeight: "600", marginBottom: 20, textAlign: "center" },
-  card: { backgroundColor: "#fff", borderRadius: 12, padding: 20 },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
-  greeting: { fontSize: 18, fontWeight: "600" },
-  username: { fontSize: 14, color: "#777" },
-  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 20 },
-  checkBtn: { flex: 1, backgroundColor: "#e9e9e9", padding: 15, borderRadius: 8, alignItems: "center", marginHorizontal: 5 },
-  checkText: { marginTop: 5, fontSize: 14, fontWeight: "500" },
-  menuItem: { flexDirection: "row", alignItems: "center", paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: "#eee" },
-  menuText: { flex: 1, fontSize: 15, marginLeft: 10, fontWeight: "500" },
+  name: {
+    fontSize: 16,
+    color: "#666",
+  },
+  profileIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkContainer: {
+    flexDirection: "row",
+    margin: 20,
+  },
+  checkButton: {
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+  },
+  checkText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 8,
+  },
+  Card:{
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  singleCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: 20,
+    paddingRight: 40,
+    marginVertical: 8,
+    borderRadius: 12,
+    elevation: 2,
+  },
+  menuCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: 25,
+    marginVertical: 6,
+    borderRadius: 12,
+    elevation: 2,
+  },
+  menuText: {
+    fontSize: 16,
+    marginLeft: 12,
+    color: "#333",
+  },
 });
