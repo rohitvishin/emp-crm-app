@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import {
   Alert,
   FlatList,
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,8 +16,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function HomeScreen() {
   const router = useRouter();
   const [isCheckedIn, setIsCheckedIn] = useState(false);
-  const checkBtnColor1= isCheckedIn? "#de8181ff" : "#667eea";
-  const checkBtnColor2= isCheckedIn? "#c63030ff" : "#764ba2";
+  const checkBtnColor1= isCheckedIn? "#de8181ff" : "#000";
+  const checkBtnColor2= isCheckedIn? "#c63030ff" : "#000";
   const menuItems = [
     { id: "1", title: "Field Visits", icon: "map-pin", route: "/field-visits" },
     { id: "2", title: "Expenses", icon: "file-text", route: "/list-expense" },
@@ -49,14 +50,12 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>Good Morning</Text>
           <Text style={styles.name}>John Smith</Text>
         </View>
-        <LinearGradient
-          colors={["#667eea", "#764ba2"]}
+        <TouchableOpacity onPress={() => router.push("/profile")}>
+            <Image
+          source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }}
           style={styles.profileIcon}
-        >
-          <TouchableOpacity onPress={() => router.push("/profile")}>
-            <Feather name="user" size={24} color="#fff" />
+        />
           </TouchableOpacity>
-        </LinearGradient>
       </View>
       {/* Dashboard Cards */}
       <View style={styles.Card}>
@@ -115,7 +114,11 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
   container: {
     flex: 1,
     padding: 20,
@@ -148,7 +151,7 @@ const styles = StyleSheet.create({
     margin: 20,
   },
   checkButton: {
-    flexDirection: "column",
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 14,

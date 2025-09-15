@@ -59,7 +59,7 @@ const AddLeaveScreen = () => {
     </View>
 
       {/* Leave Dropdown */}
-      <Text style={styles.label}>Leave Type</Text>
+      <Text style={[styles.subLabel,{marginTop:15}]}>Leave Type</Text>
       <View style={styles.pickerBox}>
         <Picker
           selectedValue={category}
@@ -112,7 +112,7 @@ const AddLeaveScreen = () => {
      
 
       {/* Reason */}
-      <Text style={styles.label}>Reason</Text>
+      <Text style={styles.subLabel}>Reason</Text>
       <TextInput
         style={[styles.input, styles.textArea]}
         placeholder="Enter reason"
