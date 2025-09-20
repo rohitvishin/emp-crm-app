@@ -1,11 +1,19 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 const ProfileScreen = () => {
   const router = useRouter();
-
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem("token");
+      router.replace("/"); // Redirect to login screen
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -60,7 +68,7 @@ const ProfileScreen = () => {
           <MaterialIcons name="chevron-right" size={22} color="#aaa" />
         </TouchableOpacity>
         {/* Logout */}
-      <TouchableOpacity style={styles.logoutBtn} onPress={() => router.replace("/")}>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
       </View>

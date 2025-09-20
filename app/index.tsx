@@ -1,20 +1,66 @@
 import { Feather, MaterialIcons } from "@expo/vector-icons";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BASE_URL } from "../src/config";
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
-  const handleLogin = () => {
-    console.log("Logging in with:");
-    // Normally validate credentials here
-    router.replace("/home"); // Navigate to Home
+  useEffect(() => {
+    const checkLogin = async () => {
+      try {
+        const token = await AsyncStorage.getItem("token");
+        if (token) {
+          // If token already saved, redirect to Home
+          router.replace("/home");
+        }
+      } catch (error) {
+        console.error("Token check error:", error);
+      }
+    };
+
+    checkLogin();
+  }, []);
+
+  const handleLogin = async () => {
+    // if either field is empty, show an alert
+    if (!mobile || !password) {
+      Alert.alert("Error", "Please enter both mobile and password.");
+      return;
+    }
+    const loginUrl = `${BASE_URL}/api/login`;
+    console.log("Login URL:", loginUrl);
+      try {
+        const response = await fetch(loginUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            mobile: mobile,
+            password: password,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          await AsyncStorage.setItem("token", data.token);
+          router.replace("/home"); 
+        } else {
+          Alert.alert("Error", data.message || "Login failed!");
+        }
+      } catch (error) {
+        console.error("Login error:", error);
+        Alert.alert("Error", "Something went wrong!");
+      }
   };
 
   return (
@@ -36,14 +82,14 @@ export default function LoginScreen() {
         <Text style={styles.formTitle}>Sign In</Text>
         <Text style={styles.formSubtitle}>Enter your credentials to access your account</Text>
 
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>Mobile</Text>
         <View style={styles.inputWrapper}>
-          <MaterialIcons name="email" size={20} color="#999" style={styles.icon} />
+          <MaterialIcons name="phone" size={20} color="#999" style={styles.icon} />
           <TextInput
             style={styles.input}
-            placeholder="Enter your email"
-            value={email}
-            onChangeText={setEmail}
+            placeholder="Enter your mobile number"
+            value={mobile}
+            onChangeText={setMobile}
             keyboardType="email-address"
           />
         </View>
@@ -76,9 +122,9 @@ export default function LoginScreen() {
         </LinearGradient>
         
 
-        <TouchableOpacity>
+        {/* <TouchableOpacity>
           <Text style={styles.forgot}>Forgot your password?</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </SafeAreaView>
   );
