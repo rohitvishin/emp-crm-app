@@ -1,7 +1,9 @@
+import { BASE_URL } from "@/src/config";
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -15,7 +17,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   const router = useRouter();
+  // check punch_in_time in AsyncStorage to determine if user is checked in
   const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [LastPunchIn, setLastPunchIn] = useState('');
   const checkBtnColor1= isCheckedIn? "#de8181ff" : "#000";
   const checkBtnColor2= isCheckedIn? "#c63030ff" : "#000";
   const menuItems = [
@@ -23,21 +27,72 @@ export default function HomeScreen() {
     { id: "2", title: "Expenses", icon: "file-text", route: "/list-expense" },
     { id: "3", title: "Leave Requests", icon: "calendar", route: "/list-leave" },
   ];
+  useEffect(() => {
+    const checkPunchInStatus = async () => {
+      const punchInTime = await AsyncStorage.getItem("punch_in_time");
+      if (punchInTime!='' && punchInTime!=null) {
+        // if punchInTIme is not today's date, remove it from storage
+        const punchDate = new Date(punchInTime).toDateString();
+        const todayDate = new Date().toDateString();
+        if(punchDate !== todayDate){
+          await AsyncStorage.removeItem("punch_in_time");
+          setIsCheckedIn(false);
+          setLastPunchIn('');
+          return;
+        }
+        setIsCheckedIn(true);
+        setLastPunchIn(punchInTime);
+      }
+    };
+    checkPunchInStatus();
+  }, []);
 
   const handleCheckInOut = () => {
-    const action = isCheckedIn ? "Check-Out" : "Check-In";
+    const action = isCheckedIn ? "punch-out" : "punch-in";
+    const label = isCheckedIn ? "Check-Out" : "Check-In";
 
     Alert.alert(
       "Confirmation",
-      `Are you sure you want to ${action}?`,
+      `Are you sure you want to ${label}?`,
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
         {
           text: "Yes",
-          onPress: () => setIsCheckedIn(!isCheckedIn),
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem("token");
+              const emp_code = await AsyncStorage.getItem("emp_code");
+              const response = await fetch(`${BASE_URL}/attendance/${action}`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  emp_code: emp_code,
+                }),
+              });
+
+              const data = await response.json();
+
+              if (response.ok) {
+                Alert.alert("Success", `${label} successful!`);
+                if(!isCheckedIn){
+                  const punchInTime = new Date(data.attendance.created_at).toLocaleString();
+                  await AsyncStorage.setItem("punch_in_time", punchInTime.toString());
+                  setLastPunchIn(punchInTime.toString());
+                }else{
+                  setLastPunchIn('');
+                  await AsyncStorage.removeItem("punch_in_time");
+                }
+                setIsCheckedIn(!isCheckedIn);
+              } else {
+                Alert.alert("Error", data.message || `${label} failed`);
+              }
+            } catch (error) {
+              Alert.alert("Error", "Something went wrong!");
+            }
+          },
         },
       ]
     );
@@ -98,6 +153,7 @@ export default function HomeScreen() {
       />
 
       {/* Check In / Out Buttons */}
+      <View style={styles.TimeContainer}><Text>{LastPunchIn}</Text></View>
       <View style={styles.checkContainer}>
         <TouchableOpacity onPress={handleCheckInOut} style={{ flex: 1, marginRight: 8 }}>
           <LinearGradient
@@ -149,6 +205,11 @@ const styles = StyleSheet.create({
   checkContainer: {
     flexDirection: "row",
     margin: 20,
+  },
+  TimeContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
   },
   checkButton: {
     flexDirection: "row",

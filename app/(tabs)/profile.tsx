@@ -9,6 +9,7 @@ const ProfileScreen = () => {
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem("token");
+      await AsyncStorage.removeItem("emp_code");
       router.replace("/"); // Redirect to login screen
     } catch (error) {
       console.error("Logout error:", error);

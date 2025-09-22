@@ -35,7 +35,7 @@ export default function LoginScreen() {
       Alert.alert("Error", "Please enter both mobile and password.");
       return;
     }
-    const loginUrl = `${BASE_URL}/api/login`;
+    const loginUrl = `${BASE_URL}/login`;
     console.log("Login URL:", loginUrl);
       try {
         const response = await fetch(loginUrl, {
@@ -53,6 +53,7 @@ export default function LoginScreen() {
 
         if (response.ok) {
           await AsyncStorage.setItem("token", data.token);
+          await AsyncStorage.setItem("emp_code", data.user.emp_code);
           router.replace("/home"); 
         } else {
           Alert.alert("Error", data.message || "Login failed!");

@@ -1,9 +1,12 @@
+import { BASE_URL } from "@/src/config";
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import RNPickerSelect from "react-native-picker-select";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AddVisit() {
   const router = useRouter();
@@ -20,22 +23,54 @@ export default function AddVisit() {
   const [purpose, setPurpose] = useState("");
   const [description, setDescription] = useState("");
 
-   const employees = [
-        { label: "John Smith", value: "john" },
-        { label: "Alice Johnson", value: "alice" },
-        { label: "Michael Brown", value: "michael" },
+   const customers = [
+        { label: "John Smith", value: 1 },
+        { label: "Alice Johnson", value: 2 },
+        { label: "Michael Brown", value: 3 },
     ];
-  const handleSave = () => {
-    console.log({
-      date: date?.toDateString(),
-      employee,
-      customer,
-      purpose,
-      description,
-      startTime: startTime?.toLocaleTimeString(),
-      endTime: endTime?.toLocaleTimeString(),
-    });
-    router.back();
+  const handleSave = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        Alert.alert("Error", "You are not logged in!");
+        return;
+      }
+
+      // Build request payload
+      const payload = {
+        customer_id: customer,
+        visit_date: date ? date.toISOString().split("T")[0] : null, // YYYY-MM-DD
+        purpose: purpose,
+        notes: description,
+        visit_start_time: startTime
+          ? new Date(startTime).toISOString().slice(0, 19).replace("T", " ")
+          : null,
+        visit_end_time: endTime
+          ? new Date(endTime).toISOString().slice(0, 19).replace("T", " ")
+          : null,
+      };
+      // Send to API
+      const response = await fetch(`${BASE_URL}/visits`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Alert.alert("Success", "Visit saved successfully!", [
+          { text: "OK", onPress: () => router.push("/field-visits") },
+        ]);
+      } else {
+        Alert.alert("Error", data.message || "Failed to save visit.");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Something went wrong while saving visit.");
+    }
   };
 
   return (
@@ -50,27 +85,18 @@ export default function AddVisit() {
       </View>
 
       <ScrollView contentContainerStyle={styles.form}>
-        
-        {/* Assigned To */}
-        <Text style={styles.label}>Assigned To</Text>
+      
+        {/* Customer  */}        
+        <Text style={styles.label}>Customer</Text>
         <RNPickerSelect
-        onValueChange={(value) => setEmployee(value)}
-        items={employees}
-        value={employee}
-        placeholder={{ label: "Select employee", value: null }}
+        onValueChange={(value) => setCustomer(value)}
+        items={customers}
+        value={customer}
+        placeholder={{ label: "Select Customer", value: null }}
         style={{
           inputAndroid: styles.input, // Android style
         }}
       />
-
-        {/* Customer Name */}
-        <Text style={styles.label}>Customer Name</Text>
-        <TextInput
-          style={styles.textInput}
-          placeholder="Enter customer name"
-          value={customer}
-          onChangeText={setCustomer}
-        />
 
         {/* Visit Purpose */}
         <Text style={styles.label}>Visit Purpose</Text>
@@ -154,9 +180,9 @@ export default function AddVisit() {
           <Text style={styles.saveText}>Save Visit</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
+        {/* <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
           <Text style={styles.cancelText}>Cancel</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </ScrollView>
     </SafeAreaView>
   );

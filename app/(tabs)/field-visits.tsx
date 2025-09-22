@@ -1,9 +1,10 @@
+import { BASE_URL } from "@/src/config";
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React from "react";
-import { SectionList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, SectionList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 const visits = [
   {
     id: "1",
@@ -13,47 +14,6 @@ const visits = [
     status: "Pending",
     groupDate: "Jan 15, 2025",
   },
-  {
-    id: "4",
-    title: "Tata Steel Company",
-    location: "Tata Steel Office",
-    date: "Jan 15, 2025 - 2:00 PM",
-    status: "Pending",
-    groupDate: "Jan 15, 2025",
-  },
-  {
-    id: "2",
-    title: "Site Inspection",
-    location: "Downtown Project Site",
-    date: "Jan 14, 2025 - 10:00 AM",
-    status: "Pending",
-    groupDate: "Jan 14, 2025",
-  },
-  {
-    id: "3",
-    title: "Lunch meeting",
-    location: "Downtown Project Site",
-    date: "Jan 14, 2025 - 10:00 AM",
-    status: "Pending",
-    groupDate: "Jan 14, 2025",
-  },
-  {
-    id: "5",
-    title: "Lunch meeting",
-    location: "Downtown Project Site",
-    date: "Jan 14, 2025 - 10:00 AM",
-    status: "Pending",
-    groupDate: "Jan 14, 2025",
-  },
-  {
-    id: "6",
-    title: "Lunch meeting",
-    location: "Downtown Project Site",
-    date: "Jan 14, 2025 - 10:00 AM",
-    status: "Pending",
-    groupDate: "Jan 14, 2025",
-  },
-
 ];
 const sections = Object.values(
   visits.reduce((acc, visit) => {
@@ -67,7 +27,61 @@ const sections = Object.values(
 
 export default function FieldVisits() {
   const router = useRouter();
+  const [sections, setSections] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+      fetchVisits();
+    }, []);
 
+  const fetchVisits = async () => {
+  try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        console.log("No token found");
+        return;
+      }
+
+      const response = await fetch(`${BASE_URL}/visits`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.visits?.data) {
+        // Transform API data to match UI structure
+        const visits = data.visits.data.map((v: any) => ({
+          id: String(v.id),
+          title: v.purpose || "No Purpose",
+          location: `Get customer addr by ID: ${v.customer_id}`, // adjust if API returns customer name
+          date: v.visit_date,
+          status: v.outcome,
+          groupDate: v.visit_date, // group by date
+        }));
+
+        // Group visits by groupDate for SectionList
+        const grouped = Object.values(
+          visits.reduce((acc: any, visit: any) => {
+            if (!acc[visit.groupDate]) {
+              acc[visit.groupDate] = { title: visit.groupDate, data: [] };
+            }
+            acc[visit.groupDate].data.push(visit);
+            return acc;
+          }, {})
+        );
+
+        setSections(grouped);
+      } else {
+        console.error("Error fetching visits:", data);
+      }
+    } catch (error) {
+      console.error("Fetch visits error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -76,44 +90,50 @@ export default function FieldVisits() {
           <Feather name="arrow-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Visit List</Text>
-        <View></View>
-      </View>
-
-      <SectionList
-      sections={sections}
-      keyExtractor={(item) => item.id}
-      renderSectionHeader={({ section: { title } }) => (
-        <Text style={styles.sectionHeader}>{title}</Text>
-      )}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          onPress={() => router.push("/visit-detail")}
-          style={styles.card}
-        >
-          <View style={styles.cardRow}>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <View
-              style={[
-                styles.statusBadge,
-                item.status === "Pending"
-                  ? styles.scheduled
-                  : styles.completed,
-              ]}
-            >
-              <Text style={styles.statusText}>{item.status}</Text>
-            </View>
-          </View>
-          <Text style={styles.cardSubtitle}>{item.location}</Text>
-          <Text style={styles.cardDate}>{item.date}</Text>
-          <Feather
-            name="chevron-right"
-            size={20}
-            color="#999"
-            style={styles.arrow}
-          />
+        <TouchableOpacity onPress={() => router.push("/add-visit")}>
+          <Feather name="plus" size={24} color="#000" />
         </TouchableOpacity>
-      )}
-    />
+      </View>
+    {loading ? (
+        <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
+      ) : (
+        <SectionList
+          sections={sections}
+          keyExtractor={(item) => item.id}
+          renderSectionHeader={({ section: { title } }) => (
+            <Text style={styles.sectionHeader}>{title}</Text>
+          )}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => router.push("/visit-detail")}
+              style={styles.card}
+            >
+              <View style={styles.cardRow}>
+                <Text style={styles.cardTitle}>{item.title}</Text>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    item.status === "Pending"
+                      ? styles.scheduled
+                      : styles.completed,
+                  ]}
+                >
+                  <Text style={styles.statusText}>{item.status}</Text>
+                </View>
+              </View>
+              <Text style={styles.cardSubtitle}>{item.location}</Text>
+              <Text style={styles.cardDate}>{item.date}</Text>
+              <Feather
+                name="chevron-right"
+                size={20}
+                color="#999"
+                style={styles.arrow}
+              />
+            </TouchableOpacity>
+          )}
+        />
+      )
+    }
     </SafeAreaView>
   );
 }
