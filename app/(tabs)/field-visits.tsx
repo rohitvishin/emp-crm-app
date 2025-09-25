@@ -5,25 +5,6 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, SectionList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-const visits = [
-  {
-    id: "1",
-    title: "Client Meeting",
-    location: "ABC Corp Office",
-    date: "Jan 15, 2025 - 2:00 PM",
-    status: "Pending",
-    groupDate: "Jan 15, 2025",
-  },
-];
-const sections = Object.values(
-  visits.reduce((acc, visit) => {
-    if (!acc[visit.groupDate]) {
-      acc[visit.groupDate] = { title: visit.groupDate, data: [] };
-    }
-    acc[visit.groupDate].data.push(visit);
-    return acc;
-  }, {} as Record<string, { title: string; data: typeof visits }>)
-);
 
 export default function FieldVisits() {
   const router = useRouter();

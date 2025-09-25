@@ -1,30 +1,59 @@
+import { BASE_URL } from "@/src/config";
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const expenses = [
-  {
-    id: "1",
-    title: "Travel to Client Site",
-    location: "ABC Corp Office",
-    date: "Jan 15, 2025 - 2:00 PM",
-    amount: "$150.00",
-    status: "Pending",
-  },
-  {
-    id: "2",
-    title: "Lunch Meeting",
-    location: "Downtown Project Site",
-    date: "Jan 14, 2025 - 10:00 AM",
-    amount: "$200.00",
-    status: "Approved",
-  },
-];
+type Expense = {
+  id: string;
+  category: string;
+  description: string;
+  created_at: string;
+  amount: string;
+  status: "pending" | "approved" | "rejected" | string; // extendable
+};
 
 export default function ListExpense() {
   const router = useRouter();
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",  // Jan, Feb, Mar...
+      day: "2-digit",  // 01, 02, ...
+      year: "numeric",
+    });
+  };
+
+  const fetchExpenses = async () => {
+    try {
+      const token=await AsyncStorage.getItem('token');
+      const response = await fetch(`${BASE_URL}/expenses`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const json = await response.json();
+      if (json.status && json.data) {
+        setExpenses(json.data);
+      }
+    } catch (err) {
+      console.error("API error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -40,20 +69,20 @@ export default function ListExpense() {
       </View>
 
       {/* Expense List */}
-      <FlatList
+      <FlatList<Expense>
         data={expenses}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.card}>
             <View style={styles.cardRow}>
-              <Text style={styles.cardTitle}>{item.title}</Text>
+              <Text style={styles.cardTitle}>{item.category}</Text>
               <View style={[styles.statusBadge, item.status === "Pending" ? styles.scheduled : styles.completed]}>
                 <Text style={styles.statusText}>{item.status}</Text>
               </View>
             </View>
-            <Text style={styles.cardSubtitle}>{item.location}</Text>
-            <Text style={styles.cardDate}>{item.date}</Text>
-            <Text style={styles.arrow}>{item.amount}</Text>
+            <Text style={styles.cardSubtitle}>{item.description}</Text>
+            <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
+            <Text style={styles.arrow}>{item.amount} INR</Text>
           </TouchableOpacity>
         )}
       />

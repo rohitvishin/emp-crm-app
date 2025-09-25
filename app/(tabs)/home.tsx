@@ -61,16 +61,13 @@ export default function HomeScreen() {
           onPress: async () => {
             try {
               const token = await AsyncStorage.getItem("token");
-              const emp_code = await AsyncStorage.getItem("emp_code");
               const response = await fetch(`${BASE_URL}/attendance/${action}`, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                  emp_code: emp_code,
-                }),
+               
               });
 
               const data = await response.json();

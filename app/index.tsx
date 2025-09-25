@@ -53,7 +53,6 @@ export default function LoginScreen() {
 
         if (response.ok) {
           await AsyncStorage.setItem("token", data.token);
-          await AsyncStorage.setItem("emp_code", data.user.emp_code);
           router.replace("/home"); 
         } else {
           Alert.alert("Error", data.message || "Login failed!");

@@ -1,9 +1,12 @@
+import { BASE_URL } from "@/src/config";
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
   Image,
   StyleSheet,
   Text,
@@ -18,28 +21,48 @@ const AddExpenseScreen = () => {
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [receipt, setReceipt] = useState(null);
+  const [receipt, setReceipt] = useState<any>(null);
 
   const handleReceiptUpload = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 0.7,
+      base64: true,
     });
 
     if (!result.canceled) {
-    //   setReceipt(result.assets[0].uri);
+      console.log(result.assets[0].uri);
+      setReceipt(result.assets[0].uri);
     }
   };
 
-  const handleSubmit = () => {
-    console.log({
-      category,
-      amount,
-      description,
-      receipt,
-    });
+  const handleSubmit = async () => {
+    const token=await AsyncStorage.getItem('token');
+    const payload={
+      category:category,
+      amount:amount,
+      description:description,
+      receipt:'receipt',
+    }
     // handle API call here
+    const response=await fetch(`${BASE_URL}/add-expenses`,{
+        method:'POST',
+        headers:{
+          "Content-Type":"application/json",
+          Authorization:`Bearer ${token}`,
+        },
+        body:JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (response.ok) {
+      Alert.alert("Success", "Expense added successfully!", [
+        { text: "OK", onPress: () => router.push("/list-expense") },
+      ]);
+    } else {
+      Alert.alert("Error", data.message || "Failed to add expense.");
+    }
+        
   };
 
   return (
@@ -54,7 +77,7 @@ const AddExpenseScreen = () => {
        </View>
 
       {/* Category Dropdown */}
-      <Text style={styles.label}>Category</Text>
+      <Text style={[styles.label,{marginTop:15}]}>Category</Text>
       <View style={styles.pickerBox}>
         <Picker
           selectedValue={category}
