@@ -1,10 +1,12 @@
+import { BASE_URL } from "@/src/config";
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
-import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
   Platform,
   StyleSheet,
   Text,
@@ -21,30 +23,43 @@ const AddLeaveScreen = () => {
     const [fromDate, setFromDate] = useState<Date | null>(null);
     const [toDate, setToDate] = useState<Date | null>(null);
     const [category, setCategory] = useState("");
-    const [amount, setAmount] = useState("");
     const [description, setDescription] = useState("");
-    const [receipt, setReceipt] = useState(null);
+    
 
-  const handleReceiptUpload = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.7,
-    });
-
-    if (!result.canceled) {
-    //   setReceipt(result.assets[0].uri);
-    }
-  };
-
-  const handleSubmit = () => {
-    console.log({
-      category,
-      amount,
-      description,
-      receipt,
-    });
+  const handleSubmit = async () => {
+    const leave_from=fromDate
+          ? new Date(fromDate).toISOString().split("T")[0]
+          : null;
+    const leave_to=toDate
+          ? new Date(toDate).toISOString().split("T")[0]
+          : null;
+   
     // handle API call here
+    const token=await AsyncStorage.getItem('token');
+    const payload={
+      leave_type:category,
+      reason:description,
+      leave_from:leave_from,
+      leave_to:leave_to,
+    }
+    console.log(payload);
+    // handle API call here
+    const response=await fetch(`${BASE_URL}/add-leaves`,{
+        method:'POST',
+        headers:{
+          "Content-Type":"application/json",
+          Authorization:`Bearer ${token}`,
+        },
+        body:JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (response.ok) {
+      Alert.alert("Success", "Leave request added!", [
+        { text: "OK", onPress: () => router.push("/list-leave") },
+      ]);
+    } else {
+      Alert.alert("Error", data.message || "Failed to add leave.");
+    }
   };
 
   return (

@@ -1,11 +1,19 @@
+import { BASE_URL } from "@/src/config";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 const ProfileScreen = () => {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [fullname, setName] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [email, setEmail] = useState("");
+  const [department, setDepartment] = useState("");
+  const [manager, setManager] = useState("");
+
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem("token");
@@ -14,6 +22,44 @@ const ProfileScreen = () => {
       console.error("Logout error:", error);
     }
   };
+  
+  useEffect(() => {
+      getProfile();
+  }, []);
+
+  const getProfile = async () => {
+  try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        console.log("No token found");
+        return;
+      }
+
+      const response = await fetch(`${BASE_URL}/user`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data) {
+        // Transform API data to match UI structure
+        setName(data.name);
+        setMobile(data.mobile);
+        setEmail(data.email);
+        setManager(data.name);
+        setDepartment(data.name);
+      } else {
+        console.error("Error fetching visits:", data);
+      }
+    } catch (error) {
+      console.error("Fetch visits error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -38,19 +84,19 @@ const ProfileScreen = () => {
       <View style={styles.infoSection}>
         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.label}>Full Name</Text>
-          <Text style={styles.value}>John Michael Smith</Text>
+          <Text style={styles.value}>{fullname}</Text>
           <MaterialIcons name="chevron-right" size={22} color="#aaa" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.label}>Mobile</Text>
-          <Text style={styles.value}>+1 (555) 123-4567</Text>
+          <Text style={styles.value}>{mobile}</Text>
           <MaterialIcons name="chevron-right" size={22} color="#aaa" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.label}>Email</Text>
-          <Text style={styles.value}>john.smith@company.com</Text>
+          <Text style={styles.value}>{email}</Text>
           <MaterialIcons name="chevron-right" size={22} color="#aaa" />
         </TouchableOpacity>
 
