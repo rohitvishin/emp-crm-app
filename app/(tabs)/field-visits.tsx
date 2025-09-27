@@ -1,13 +1,16 @@
 import { BASE_URL } from "@/src/config";
+import { setSelectedVisit } from "@/src/visitSlice";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, SectionList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDispatch } from "react-redux";
 
 export default function FieldVisits() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [sections, setSections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -30,13 +33,13 @@ export default function FieldVisits() {
       });
 
       const data = await response.json();
-
-      if (response.ok && data.visits?.data) {
+      if (response.ok && data.visits) {
         // Transform API data to match UI structure
-        const visits = data.visits.data.map((v: any) => ({
+        const visits = data.visits.map((v: any) => ({
           id: String(v.id),
-          title: v.purpose || "No Purpose",
+          purpose: v.purpose || "No Purpose",
           location: `Get customer addr by ID: ${v.customer_id}`, // adjust if API returns customer name
+          visit_start_time: v.visit_start_time,
           date: v.visit_date,
           status: v.outcome,
           groupDate: v.visit_date, // group by date
@@ -86,11 +89,14 @@ export default function FieldVisits() {
           )}
           renderItem={({ item }) => (
             <TouchableOpacity
-              onPress={() => router.push("/visit-detail")}
+              onPress={() => {
+                dispatch(setSelectedVisit(item));
+                router.push("/visit-detail")
+              }}
               style={styles.card}
             >
               <View style={styles.cardRow}>
-                <Text style={styles.cardTitle}>{item.title}</Text>
+                <Text style={styles.cardTitle}>{item.purpose}</Text>
                 <View
                   style={[
                     styles.statusBadge,

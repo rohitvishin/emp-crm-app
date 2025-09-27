@@ -7,7 +7,6 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 const ProfileScreen = () => {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
   const [fullname, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [email, setEmail] = useState("");
@@ -56,9 +55,7 @@ const ProfileScreen = () => {
       }
     } catch (error) {
       console.error("Fetch visits error:", error);
-    } finally {
-      setLoading(false);
-    }
+    } 
   }
   return (
     <SafeAreaView style={styles.container}>

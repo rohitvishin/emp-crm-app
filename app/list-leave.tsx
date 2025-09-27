@@ -45,8 +45,8 @@ export default function ListLeaves() {
       });
       const json = await response.json();
 
-      if (json.status && json.leaves?.data) {
-        const formatted: Leave[] = json.leaves.data.map((item: any) => {
+      if (json.status && json.leaves) {
+        const formatted: Leave[] = json.leaves.map((item: any) => {
           const from = new Date(item.leave_from);
           const to = new Date(item.leave_to);
 
