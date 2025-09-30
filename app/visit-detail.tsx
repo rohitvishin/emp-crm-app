@@ -1,8 +1,10 @@
 import { RootState } from "@/src";
+import { BASE_URL } from "@/src/config";
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 
@@ -10,12 +12,14 @@ export default function VisitDetailScreen() {
   const [isStarted, setIsStarted] = useState(false);
   const [isCheckIn, setIsCheckedIn] = useState(false);
   const [isCheckOut, setIsCheckedOut] = useState(false);
+  const [visitId, setVisitId] = useState(0);
   const router = useRouter();
   const visit=useSelector((state: RootState) => state.visit.selectedVisit)
   useEffect(()=>{
     updateVisit(visit)
   });
   const updateVisit=(visit:any)=>{
+    console.log(visit);
     if(visit.started_visit_at!=null || visit.started_visit_at!=undefined ){
       console.log(visit.started_visit_at);
       setIsStarted(true)
@@ -25,6 +29,9 @@ export default function VisitDetailScreen() {
     }
     if(visit.check_out_time!=null || visit.check_out_time!=undefined ){
       setIsCheckedOut(true)
+    }
+    if(visit.id!=null || visit.id!=undefined){
+      setVisitId(visit.id)
     }
   }
 
@@ -45,18 +52,60 @@ export default function VisitDetailScreen() {
     );
   };
 
-  const handleVisitToggle = () => {
-    if(!isStarted){
-      setIsStarted(true);
-    }
-    if(isStarted && !isCheckIn){
-       setIsCheckedIn(true)
-    }
-    if (isStarted && isCheckIn && !isCheckOut) {
-      setIsCheckedOut(true);
-      // End Visit → go to Report screen
-      router.push("/report-visit");
-    }
+  const handleVisitToggle = async () => {
+     Alert.alert(
+      "Confirm Action",
+      `Are you sure ?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Yes",
+          onPress: async () => {
+              try{
+                  let actionType = "";
+                    if (!isStarted) {
+                      setIsStarted(true);
+                      actionType = "start_visit";
+                    } else if (isStarted && !isCheckIn) {
+                      setIsCheckedIn(true);
+                      actionType = "reached_at";
+                    } else if (isStarted && isCheckIn && !isCheckOut) {
+                      setIsCheckedOut(true);
+                      actionType = "meeting_end";
+                    }
+
+                    if (actionType !== "") {
+                      const payload={
+                        action_type:actionType,
+                        visit_id:visitId,
+                      }
+                      console.log(payload);
+                      const token=await AsyncStorage.getItem('token');
+                      const response=await fetch(`${BASE_URL}/update-visit`,{
+                          method:'POST',
+                          headers:{
+                            "Content-Type":"application/json",
+                            Authorization:`Bearer ${token}`,
+                          },
+                          body:JSON.stringify(payload)
+                      });
+                      const data = await response.json();
+                      if (response.ok) {
+                        if (actionType === "meeting_end") {
+                          // End Visit → go to Report screen
+                          router.push("/report-visit");
+                        }
+                      } else {
+                        Alert.alert("Error", data.message || "Failed to update visit");
+                      }
+                  }
+                }catch (error) {
+                  console.error(error);
+                  Alert.alert("Error", "Something went wrong while updating visit");
+                }
+          }
+        }
+      ]);
   };
   return (
     <SafeAreaView style={styles.container}>
@@ -114,10 +163,12 @@ export default function VisitDetailScreen() {
       </View> */}
 
       {/* Start Visit Button */}
-      <TouchableOpacity style={styles.startBtn} onPress={handleVisitToggle}>
-        <Feather name="play" size={18} color="#fff" />
-        <Text style={styles.startBtnText}>{isStarted ? (isCheckIn?"End Meeting":"Reached Location") : "Start Visit"}</Text>
-      </TouchableOpacity>
+      {!isCheckOut?(
+          <TouchableOpacity style={styles.startBtn} onPress={handleVisitToggle}>
+              <Feather name="play" size={18} color="#fff" />
+              <Text style={styles.startBtnText}>{isStarted ? (isCheckIn?"End Meeting":"Reached Location") : "Start Visit"}</Text>
+          </TouchableOpacity>
+      ):''}
     </SafeAreaView>
   );
 }

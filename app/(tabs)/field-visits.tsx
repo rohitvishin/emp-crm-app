@@ -40,6 +40,9 @@ export default function FieldVisits() {
           purpose: v.purpose || "No Purpose",
           location: `Get customer addr by ID: ${v.customer_id}`, // adjust if API returns customer name
           visit_start_time: v.visit_start_time,
+          started_visit_at: v.started_visit_at?v.started_visit_at:null,
+          check_in_time: v.check_in_time?v.check_in_time:null,
+          check_out_time: v.check_out_time?v.check_out_time:null,
           date: v.visit_date,
           status: v.outcome,
           groupDate: v.visit_date, // group by date
@@ -100,12 +103,12 @@ export default function FieldVisits() {
                 <View
                   style={[
                     styles.statusBadge,
-                    item.status === "Pending"
-                      ? styles.scheduled
-                      : styles.completed,
+                    item.check_out_time!=''
+                      ? styles.completed
+                      : styles.scheduled,
                   ]}
                 >
-                  <Text style={styles.statusText}>{item.status}</Text>
+                  <Text style={styles.statusText}>{item.check_out_time?'Completed':'Pending'}</Text>
                 </View>
               </View>
               <Text style={styles.cardSubtitle}>{item.location}</Text>
