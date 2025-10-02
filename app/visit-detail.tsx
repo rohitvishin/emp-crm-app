@@ -21,7 +21,6 @@ export default function VisitDetailScreen() {
   const updateVisit=(visit:any)=>{
     console.log(visit);
     if(visit.started_visit_at!=null || visit.started_visit_at!=undefined ){
-      console.log(visit.started_visit_at);
       setIsStarted(true)
     }
     if(visit.check_in_time!=null || visit.check_in_time!=undefined ){
@@ -66,9 +65,13 @@ export default function VisitDetailScreen() {
                     if (!isStarted) {
                       setIsStarted(true);
                       actionType = "start_visit";
+                      // startLocationTracking();
+                      // update visitId in AsyncStorage
                     } else if (isStarted && !isCheckIn) {
                       setIsCheckedIn(true);
                       actionType = "reached_at";
+                      //  stopLocationTracking();
+                      // clear visitId in AsyncStorage
                     } else if (isStarted && isCheckIn && !isCheckOut) {
                       setIsCheckedOut(true);
                       actionType = "meeting_end";

@@ -13,10 +13,17 @@ export default function FieldVisits() {
   const dispatch = useDispatch();
   const [sections, setSections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+
   useEffect(() => {
       fetchVisits();
     }, []);
-
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchVisits();
+    setRefreshing(false);
+  };
   const fetchVisits = async () => {
   try {
       const token = await AsyncStorage.getItem("token");
@@ -71,60 +78,64 @@ export default function FieldVisits() {
   }
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Feather name="arrow-left" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Visit List</Text>
-        <TouchableOpacity onPress={() => router.push("/add-visit")}>
-          <Feather name="plus" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
-    {loading ? (
-        <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
-      ) : (
-        <SectionList
-          sections={sections}
-          keyExtractor={(item) => item.id}
-          renderSectionHeader={({ section: { title } }) => (
-            <Text style={styles.sectionHeader}>{title}</Text>
-          )}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => {
-                dispatch(setSelectedVisit(item));
-                router.push("/visit-detail")
-              }}
-              style={styles.card}
+  {/* Header */}
+  <View style={styles.header}>
+    <TouchableOpacity onPress={() => router.back()}>
+      <Feather name="arrow-left" size={24} color="#000" />
+    </TouchableOpacity>
+    <Text style={styles.headerTitle}>Visit List</Text>
+    <View></View>
+  </View>
+
+  {loading ? (
+    <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
+  ) : (
+    <SectionList
+      sections={sections}
+      keyExtractor={(item) => item.id}
+      renderSectionHeader={({ section: { title } }) => (
+        <Text style={styles.sectionHeader}>{title}</Text>
+      )}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          onPress={() => {
+            dispatch(setSelectedVisit(item));
+            router.push("/visit-detail");
+          }}
+          style={styles.card}
+        >
+          <View style={styles.cardRow}>
+            <Text style={styles.cardTitle}>{item.purpose}</Text>
+            <View
+              style={[
+                styles.statusBadge,
+                item.check_out_time !== ""
+                  ? styles.completed
+                  : styles.scheduled,
+              ]}
             >
-              <View style={styles.cardRow}>
-                <Text style={styles.cardTitle}>{item.purpose}</Text>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    item.check_out_time!=''
-                      ? styles.completed
-                      : styles.scheduled,
-                  ]}
-                >
-                  <Text style={styles.statusText}>{item.check_out_time?'Completed':'Pending'}</Text>
-                </View>
-              </View>
-              <Text style={styles.cardSubtitle}>{item.location}</Text>
-              <Text style={styles.cardDate}>{item.date}</Text>
-              <Feather
-                name="chevron-right"
-                size={20}
-                color="#999"
-                style={styles.arrow}
-              />
-            </TouchableOpacity>
-          )}
-        />
-      )
-    }
-    </SafeAreaView>
+              <Text style={styles.statusText}>
+                {item.check_out_time ? "Completed" : "Pending"}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.cardSubtitle}>{item.location}</Text>
+          <Text style={styles.cardDate}>{item.date}</Text>
+          <Feather
+            name="chevron-right"
+            size={20}
+            color="#999"
+            style={styles.arrow}
+          />
+        </TouchableOpacity>
+      )}
+      refreshing={refreshing}
+      onRefresh={onRefresh} // 👈 pull-to-refresh built-in
+      contentContainerStyle={{ paddingBottom: 20 }}
+    />
+  )}
+</SafeAreaView>
+
   );
 }
 
