@@ -1,6 +1,7 @@
 import { BASE_URL } from "@/src/config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as TaskManager from "expo-task-manager";
+import { Alert } from "react-native";
 export const LOCATION_TASK_NAME = "background-location-task";
 
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
@@ -14,10 +15,10 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
     const [location] = locations;
     const visitId = await AsyncStorage.getItem("visitId");
     if (location) {
-      console.log("📍 Background Location:", location.coords);
+      Alert.alert("📍 Background Location:", location.coords);
 
       //send to API
-      await fetch(`${BASE_URL}/update-visit`, {
+      const response=await fetch(`${BASE_URL}/updateVisitRoute`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -30,6 +31,12 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
         ]
       }),
       });
+      const data = await response.json();
+      if (response.ok) {
+          Alert.alert("route updated")
+      } else {
+        Alert.alert("Error", data.message || "Failed to update route");
+      }
     }
   }
 });

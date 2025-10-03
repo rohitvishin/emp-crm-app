@@ -1,5 +1,6 @@
 import { RootState } from "@/src";
 import { BASE_URL } from "@/src/config";
+import { stopLocationTracking } from "@/src/location";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -42,8 +43,9 @@ export default function VisitDetailScreen() {
     );
   }
   const openMap = () => {
-    const latitude = 19.2434938;
-    const longitude = 72.8613462;
+    const latitude = visit.meeting_latitude;
+    const longitude = visit.meeting_longitude;
+    console.log(longitude)
     const label = "Client Location";
     const url =`geo:${latitude},${longitude}?q=${latitude},${longitude}(${label})`
     Linking.openURL(url).catch(() =>
@@ -65,13 +67,14 @@ export default function VisitDetailScreen() {
                     if (!isStarted) {
                       setIsStarted(true);
                       actionType = "start_visit";
-                      // startLocationTracking();
                       // update visitId in AsyncStorage
+                      await AsyncStorage.setItem("visitId", visit.id);
+                      // startLocationTracking();
                     } else if (isStarted && !isCheckIn) {
                       setIsCheckedIn(true);
                       actionType = "reached_at";
-                      //  stopLocationTracking();
-                      // clear visitId in AsyncStorage
+                       stopLocationTracking();
+                      await AsyncStorage.removeItem("visitId");
                     } else if (isStarted && isCheckIn && !isCheckOut) {
                       setIsCheckedOut(true);
                       actionType = "meeting_end";
@@ -127,7 +130,7 @@ export default function VisitDetailScreen() {
         <View style={styles.clientRow}>
           <Feather name="user" size={32} color="#666" />
           <View style={{ marginLeft: 10 }}>
-            <Text style={styles.clientName}>Client: John</Text>
+            <Text style={styles.clientName}>Client: {visit.customer}</Text>
             <Text style={styles.clientType}>Visit Status: {visit.status}</Text>
           </View>
         </View>
@@ -137,13 +140,13 @@ export default function VisitDetailScreen() {
       <View style={styles.card}>
         <Text style={styles.label}>Visit Detail</Text>
         <Text style={styles.text}>Purpose: {visit.purpose}</Text>
-        <Text style={styles.text}>Date: {visit.date}</Text>
-        <Text style={styles.text}>Time: {visit.visit_start_time}</Text>
+        <Text style={styles.text}>Date & Time: {visit.visit_start_time}</Text>
+        <Text style={styles.text}>Notes: {visit.notes}</Text>
       </View>
 
       {/* Client Location */}
       <View style={styles.card}>
-        <Text style={styles.label}>Client Location</Text>
+        <Text style={styles.label}>Meeting Location: {visit.location}</Text>
         <TouchableOpacity onPress={openMap} style={styles.mapView}>
           <Feather name="map-pin" size={28} color="#fff" />
           <Text style={styles.mapText}>Map View</Text>

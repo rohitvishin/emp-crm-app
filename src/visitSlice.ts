@@ -2,8 +2,9 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface Visit {
   id: string;
-  customer_id: string;
+  customer: string;
   purpose: string;
+  notes: string;
   location: string;
   date: string;
   visit_start_time: string;
@@ -11,6 +12,8 @@ interface Visit {
   started_visit_at: string;
   check_in_time: string;
   check_out_time: string;
+  meeting_latitude: any;
+  meeting_longitude: any;
   status: string;
 }
 

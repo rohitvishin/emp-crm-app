@@ -44,12 +44,16 @@ export default function FieldVisits() {
         // Transform API data to match UI structure
         const visits = data.visits.map((v: any) => ({
           id: String(v.id),
+          customer: v.customer.name || "No name",
           purpose: v.purpose || "No Purpose",
-          location: `Get customer addr by ID: ${v.customer_id}`, // adjust if API returns customer name
-          visit_start_time: v.visit_start_time,
+          notes: v.notes || "No Notes",
+          visit_start_time: v.meeting_scheduled_from,
           started_visit_at: v.started_visit_at?v.started_visit_at:null,
           check_in_time: v.check_in_time?v.check_in_time:null,
           check_out_time: v.check_out_time?v.check_out_time:null,
+          location: v.meetup_address?v.meetup_address:null,
+          meeting_latitude: v.meeting_latitude?v.meeting_latitude:null,
+          meeting_longitude: v.meeting_longitude?v.meeting_longitude:null,
           date: v.visit_date,
           status: v.outcome,
           groupDate: v.visit_date, // group by date
@@ -119,7 +123,7 @@ export default function FieldVisits() {
               </Text>
             </View>
           </View>
-          <Text style={styles.cardSubtitle}>{item.location}</Text>
+          <Text style={styles.cardSubtitle}>{item.notes}</Text>
           <Text style={styles.cardDate}>{item.date}</Text>
           <Feather
             name="chevron-right"
