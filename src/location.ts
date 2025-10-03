@@ -1,16 +1,26 @@
 import * as Location from "expo-location";
+import { Alert } from "react-native";
 import { LOCATION_TASK_NAME } from "../background/locationTask";
 
 export async function startLocationTracking() {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== "granted") {
-    console.error("Permission to access location was denied");
+    Alert.alert("Permission to access location was denied");
     return;
+  }
+
+  const servicesEnabled = await Location.hasServicesEnabledAsync();
+  if (!servicesEnabled) {
+    // show custom popup
+    Alert.alert(
+      "Location Required",
+      "Please enable location services (GPS) in your settings."
+    );
   }
 
   const bgStatus = await Location.requestBackgroundPermissionsAsync();
   if (bgStatus.status !== "granted") {
-    console.error("Background permission denied");
+    Alert.alert("Background permission denied");
     return;
   }
 
@@ -27,7 +37,7 @@ export async function startLocationTracking() {
         notificationBody: "We are tracking your location in background",
       },
     });
-    console.log("✅ Location tracking started");
+    Alert.alert("✅ Location tracking started");
   }
 }
 
@@ -35,6 +45,6 @@ export async function stopLocationTracking() {
   const isRegistered = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
   if (isRegistered) {
     await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
-    console.log("🛑 Location tracking stopped");
+    Alert.alert("🛑 Location tracking stopped");
   }
 }

@@ -5,6 +5,7 @@ import { Alert } from "react-native";
 export const LOCATION_TASK_NAME = "background-location-task";
 
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
+  console.log("inside backgroundscript");
   if (error) {
     console.error("TaskManager Error:", error);
     return;
@@ -13,14 +14,20 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (data) {
     const { locations } = data as any;
     const [location] = locations;
+    const token = await AsyncStorage.getItem("token");
     const visitId = await AsyncStorage.getItem("visitId");
     if (location) {
-      Alert.alert("📍 Background Location:", location.coords);
-
+      console.log("📍 Background Location:", location.coords);
+      console.log([
+          {
+            lat: location.coords.latitude,
+            lng: location.coords.longitude
+          }
+        ]);
       //send to API
       const response=await fetch(`${BASE_URL}/updateVisitRoute`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json",Authorization: `Bearer ${token}`, },
         body: JSON.stringify({
         visit_id: visitId,
         route: [
@@ -33,9 +40,9 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
       });
       const data = await response.json();
       if (response.ok) {
-          Alert.alert("route updated")
+          console.log("route updated")
       } else {
-        Alert.alert("Error", data.message || "Failed to update route");
+        Alert.alert("Error");
       }
     }
   }

@@ -1,6 +1,6 @@
 import { RootState } from "@/src";
 import { BASE_URL } from "@/src/config";
-import { stopLocationTracking } from "@/src/location";
+import { startLocationTracking, stopLocationTracking } from "@/src/location";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -69,7 +69,7 @@ export default function VisitDetailScreen() {
                       actionType = "start_visit";
                       // update visitId in AsyncStorage
                       await AsyncStorage.setItem("visitId", visit.id);
-                      // startLocationTracking();
+                      startLocationTracking();
                     } else if (isStarted && !isCheckIn) {
                       setIsCheckedIn(true);
                       actionType = "reached_at";
