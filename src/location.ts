@@ -23,7 +23,7 @@ export async function startLocationTracking() {
     Alert.alert("Background permission denied");
     return;
   }
-
+  
   const isRegistered = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
 
   if (!isRegistered) {
@@ -31,13 +31,15 @@ export async function startLocationTracking() {
       accuracy: Location.Accuracy.High,
       timeInterval: 60000, // every 1 minute
       distanceInterval: 50, // or every 50 meters
-      showsBackgroundLocationIndicator: true, // iOS
+      // showsBackgroundLocationIndicator: true, // iOS
       foregroundService: {
         notificationTitle: "Tracking Location",
         notificationBody: "We are tracking your location in background",
       },
     });
-    Alert.alert("✅ Location tracking started");
+    console.log("✅ Location tracking started");
+  }else{
+    Alert.alert("location tracking disabled");
   }
 }
 
@@ -45,6 +47,6 @@ export async function stopLocationTracking() {
   const isRegistered = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
   if (isRegistered) {
     await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
-    Alert.alert("🛑 Location tracking stopped");
+    console.log("🛑 Location tracking stopped");
   }
 }

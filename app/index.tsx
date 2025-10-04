@@ -1,9 +1,12 @@
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as IntentLauncher from 'expo-intent-launcher';
 import { LinearGradient } from "expo-linear-gradient";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import BatteryOptimization from 'react-native-battery-optimization-check';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BASE_URL } from "../src/config";
 
@@ -15,11 +18,37 @@ export default function LoginScreen() {
 
   useEffect(() => {
     const checkLogin = async () => {
+      console.log("checking login")
       try {
         const token = await AsyncStorage.getItem("token");
         if (token) {
           // If token already saved, redirect to Home
           router.replace("/home");
+        }
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permission to access location was denied");
+          return;
+        }
+      
+        const servicesEnabled = await Location.hasServicesEnabledAsync();
+        if (!servicesEnabled) {
+          // show custom popup
+          Alert.alert(
+            "Location Required",
+            "Please enable location services (GPS) in your settings."
+          );
+        }
+      
+        const bgStatus = await Location.requestBackgroundPermissionsAsync();
+        if (bgStatus.status !== "granted") {
+          Alert.alert("Background permission denied");
+          return;
+        }
+
+        const isIgnoring = await BatteryOptimization.isIgnoringBatteryOptimizations();
+        if (!isIgnoring) {
+          IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
         }
       } catch (error) {
         console.error("Token check error:", error);
@@ -142,7 +171,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: "500", marginBottom: 6 },
   inputWrapper: { flexDirection: "row", alignItems: "center", borderColor: "#ddd", borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, marginBottom: 15, backgroundColor: "#fff" },
   icon: { marginRight: 8 },
-  input: { flex: 1, height: 45 },
+  input: { flex: 1, height: 45,color:'#000' },
   button: {borderRadius: 8, alignItems: "center", width: "100%"},
   buttonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
   forgot: { fontSize: 13, color: "#4A57FF", textAlign: "center", marginTop: 10 },

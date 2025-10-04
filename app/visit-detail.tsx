@@ -99,7 +99,7 @@ export default function VisitDetailScreen() {
                       if (response.ok) {
                         if (actionType === "meeting_end") {
                           // End Visit → go to Report screen
-                          router.push("/report-visit");
+                          router.push("/field-visits");
                         }
                       } else {
                         Alert.alert("Error", data.message || "Failed to update visit");
