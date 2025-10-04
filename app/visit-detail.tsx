@@ -13,13 +13,16 @@ export default function VisitDetailScreen() {
   const [isStarted, setIsStarted] = useState(false);
   const [isCheckIn, setIsCheckedIn] = useState(false);
   const [isCheckOut, setIsCheckedOut] = useState(false);
+  const [showButton, setShowButton] = useState(false);
   const [visitId, setVisitId] = useState(0);
   const router = useRouter();
   const visit=useSelector((state: RootState) => state.visit.selectedVisit)
   useEffect(()=>{
     updateVisit(visit)
   });
-  const updateVisit=(visit:any)=>{
+
+  const updateVisit=async (visit:any)=>{
+    const visit_Id=await AsyncStorage.getItem("visitId");
     console.log(visit);
     if(visit.started_visit_at!=null || visit.started_visit_at!=undefined ){
       setIsStarted(true)
@@ -33,6 +36,17 @@ export default function VisitDetailScreen() {
     if(visit.id!=null || visit.id!=undefined){
       setVisitId(visit.id)
     }
+    if(visit_Id == visit.id){
+      // if visit already started
+      setIsStarted(true);
+      setShowButton(true);
+    }else if(visit_Id!='' || visit_Id!=null){
+      // if another visit is active
+      setShowButton(false);
+    }else{
+      setShowButton(true);
+    }
+    
   }
 
   if (!visit) {
@@ -52,20 +66,6 @@ export default function VisitDetailScreen() {
       alert("Unable to open maps. Please check your device settings.")
     );
   };
-  // const Track= async ()=>{
-  //     let { status } = await Location.requestForegroundPermissionsAsync();
-  //     if (status !== 'granted') {
-  //       console.error('Permission to access location was denied');
-  //       return;
-  //     }
-
-  //     let location = await Location.getCurrentPositionAsync({
-  //        accuracy: Location.Accuracy.Low
-  //     });
-  //     Alert.alert(String(location.coords.latitude));
-  //     console.log('Longitude:', location.coords.longitude);
-  //     console.log('Accuracy:', location.coords.accuracy);
-  // }
   const handleVisitToggle = async () => {
      Alert.alert(
       "Confirm Action",
@@ -144,7 +144,7 @@ export default function VisitDetailScreen() {
           <Feather name="user" size={32} color="#666" />
           <View style={{ marginLeft: 10 }}>
             <Text style={styles.clientName}>Client: {visit.customer}</Text>
-            <Text style={styles.clientType}>Visit Status: {visit.status}</Text>
+            <Text style={styles.clientType}>Visit Status: {isCheckIn ? (isCheckOut ? "Completed" : "Reached Location") : "Pending"}</Text>
           </View>
         </View>
       </View>
@@ -166,32 +166,14 @@ export default function VisitDetailScreen() {
           <Text style={styles.mapCoords}>{visit.meeting_latitude}°, {visit.meeting_longitude}°</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Distance + Time */}
-      {/* <View style={styles.cardRow}>
-        <View style={styles.rowItem}>
-          <Feather name="navigation" size={16} color="#555" />
-          <Text style={styles.rowLabel}>Distance</Text>
-          <Text style={styles.rowValue}>2.3 km</Text>
-        </View>
-        <View style={styles.rowItem}>
-          <Feather name="clock" size={16} color="#555" />
-          <Text style={styles.rowLabel}>Est. Travel Time</Text>
-          <Text style={styles.rowValue}>8 mins</Text>
-        </View>
-      </View> */}
-
-      {/* Start Visit Button */}
-      {!isCheckOut?(
-          <TouchableOpacity style={styles.startBtn} onPress={handleVisitToggle}>
-              <Feather name="play" size={18} color="#fff" />
-              <Text style={styles.startBtnText}>{isStarted ? (isCheckIn?"End Meeting":"Reached Location") : "Start Visit"}</Text>
-          </TouchableOpacity>
-      ):''}
-      {/* <TouchableOpacity style={styles.startBtn} onPress={Track}>
-              <Feather name="play" size={18} color="#fff" />
-              <Text style={styles.startBtnText}>Track</Text>
-          </TouchableOpacity> */}
+      {showButton && !isCheckOut && (
+        <TouchableOpacity style={styles.startBtn} onPress={handleVisitToggle}>
+          <Feather name="play" size={18} color="#fff" />
+          <Text style={styles.startBtnText}>
+            {isStarted ? (isCheckIn ? "End Meeting" : "Reached Location") : "Start Visit"}
+          </Text>
+        </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
 }
