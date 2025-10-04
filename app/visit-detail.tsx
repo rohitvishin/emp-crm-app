@@ -52,7 +52,20 @@ export default function VisitDetailScreen() {
       alert("Unable to open maps. Please check your device settings.")
     );
   };
+  // const Track= async ()=>{
+  //     let { status } = await Location.requestForegroundPermissionsAsync();
+  //     if (status !== 'granted') {
+  //       console.error('Permission to access location was denied');
+  //       return;
+  //     }
 
+  //     let location = await Location.getCurrentPositionAsync({
+  //        accuracy: Location.Accuracy.Low
+  //     });
+  //     Alert.alert(String(location.coords.latitude));
+  //     console.log('Longitude:', location.coords.longitude);
+  //     console.log('Accuracy:', location.coords.accuracy);
+  // }
   const handleVisitToggle = async () => {
      Alert.alert(
       "Confirm Action",
@@ -150,7 +163,7 @@ export default function VisitDetailScreen() {
         <TouchableOpacity onPress={openMap} style={styles.mapView}>
           <Feather name="map-pin" size={28} color="#fff" />
           <Text style={styles.mapText}>Map View</Text>
-          <Text style={styles.mapCoords}>40.7128° N, 74.0060° W</Text>
+          <Text style={styles.mapCoords}>{visit.meeting_latitude}°, {visit.meeting_longitude}°</Text>
         </TouchableOpacity>
       </View>
 
@@ -175,6 +188,10 @@ export default function VisitDetailScreen() {
               <Text style={styles.startBtnText}>{isStarted ? (isCheckIn?"End Meeting":"Reached Location") : "Start Visit"}</Text>
           </TouchableOpacity>
       ):''}
+      {/* <TouchableOpacity style={styles.startBtn} onPress={Track}>
+              <Feather name="play" size={18} color="#fff" />
+              <Text style={styles.startBtnText}>Track</Text>
+          </TouchableOpacity> */}
     </SafeAreaView>
   );
 }

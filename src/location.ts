@@ -3,46 +3,49 @@ import { Alert } from "react-native";
 import { LOCATION_TASK_NAME } from "../background/locationTask";
 
 export async function startLocationTracking() {
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== "granted") {
-    Alert.alert("Permission to access location was denied");
-    return;
-  }
+  try {
+    // 1️⃣ Make sure permissions are granted
+    const { status: fg } = await Location.requestForegroundPermissionsAsync();
+    if (fg !== "granted") {
+      Alert.alert("Location permission not granted");
+      return;
+    }
 
-  const servicesEnabled = await Location.hasServicesEnabledAsync();
-  if (!servicesEnabled) {
-    // show custom popup
-    Alert.alert(
-      "Location Required",
-      "Please enable location services (GPS) in your settings."
+    const { status: bg } = await Location.requestBackgroundPermissionsAsync();
+    if (bg !== "granted") {
+      Alert.alert("Background location denied");
+      return;
+    }
+
+    // 2️⃣ Check if already running
+    const alreadyRunning = await Location.hasStartedLocationUpdatesAsync(
+      LOCATION_TASK_NAME
     );
-  }
 
-  const bgStatus = await Location.requestBackgroundPermissionsAsync();
-  if (bgStatus.status !== "granted") {
-    Alert.alert("Background permission denied");
-    return;
-  }
-  
-  const isRegistered = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
+    if (alreadyRunning) {
+      console.log("✅ Background location already running");
+      return;
+    }
 
-  if (!isRegistered) {
+    // 3️⃣ Start updates
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-      accuracy: Location.Accuracy.High,
-      timeInterval: 60000, // every 1 minute
-      distanceInterval: 50, // or every 50 meters
-      // showsBackgroundLocationIndicator: true, // iOS
+      accuracy: Location.Accuracy.Low,
+      timeInterval: 120000, // 1 minute
+      distanceInterval: 100, // 50 m
+      pausesUpdatesAutomatically: false,
       foregroundService: {
         notificationTitle: "Tracking Location",
-        notificationBody: "We are tracking your location in background",
+        notificationBody: "Updating your location in the background",
       },
+      mayShowUserSettingsDialog: true,
     });
+
     console.log("✅ Location tracking started");
-  }else{
-    Alert.alert("location tracking disabled");
+  } catch (err) {
+    console.error("❌ startLocationTracking error:", err);
+    Alert.alert("Error", String(err));
   }
 }
-
 export async function stopLocationTracking() {
   const isRegistered = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
   if (isRegistered) {

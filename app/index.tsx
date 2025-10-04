@@ -1,12 +1,10 @@
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as IntentLauncher from 'expo-intent-launcher';
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import BatteryOptimization from 'react-native-battery-optimization-check';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BASE_URL } from "../src/config";
 
@@ -44,11 +42,6 @@ export default function LoginScreen() {
         if (bgStatus.status !== "granted") {
           Alert.alert("Background permission denied");
           return;
-        }
-
-        const isIgnoring = await BatteryOptimization.isIgnoringBatteryOptimizations();
-        if (!isIgnoring) {
-          IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
         }
       } catch (error) {
         console.error("Token check error:", error);

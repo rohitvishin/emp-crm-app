@@ -1,7 +1,6 @@
 import { BASE_URL } from "@/src/config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as TaskManager from "expo-task-manager";
-import { Alert } from "react-native";
 export const LOCATION_TASK_NAME = "background-location-task";
 
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
@@ -25,7 +24,7 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
           }
         ]);
       //send to API
-      const response=await fetch(`${BASE_URL}/updateVisitRoute`, {
+      await fetch(`${BASE_URL}/updateVisitRoute`, {
         method: "POST",
         headers: { "Content-Type": "application/json",Authorization: `Bearer ${token}`, },
         body: JSON.stringify({
@@ -38,12 +37,6 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
         ]
       }),
       });
-      const data = await response.json();
-      if (response.ok) {
-          console.log("route updated")
-      } else {
-        Alert.alert("Error");
-      }
     }
   }
 });
