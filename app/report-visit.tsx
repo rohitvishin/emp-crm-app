@@ -1,8 +1,13 @@
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { BASE_URL } from "@/src/config";
+import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  Alert,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
@@ -12,10 +17,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSelector } from "react-redux";
 
 export default function ReportVisitScreen() {
   const router = useRouter();
-
+  const [outcome, setOutcome] = useState("");
   const [rating, setRating] = useState<string>("Good");
   const [person, setPerson] = useState<string>("");
   const [nextAction, setNextAction] = useState<string>("");
@@ -27,6 +33,7 @@ export default function ReportVisitScreen() {
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [showTimePicker, setShowTimePicker] = useState<boolean>(false);
 
+  const visit=useSelector((state: RootState) => state.visit.selectedVisit)
   const ratingOptions = [
     { key: "Poor", label: "Poor", icon: "frown" },
     { key: "Fair", label: "Fair", icon: "meh" },
@@ -45,24 +52,59 @@ export default function ReportVisitScreen() {
     if (selected) setNextTime(selected);
   }
 
-  function handleSubmit() {
+  const handleSubmit=async() => {
+    const visit_Id=visit.id;
+    if (!rating) {
+      Alert.alert("Validation Error", "Please select a rating.");
+      return;
+    }
+    if (!outcome) {
+      Alert.alert("Validation Error", "Please select an outcome.");
+      return;
+    }
+    if (!nextDate) {
+      Alert.alert("Validation Error", "Please select the next visit date.");
+      return;
+    }
+    if (!visit_Id) {
+      Alert.alert("Validation Error", "Visit ID is missing.");
+      return;
+    }
+    const token=await AsyncStorage.getItem('token');
     const payload = {
-      rating,
-      person,
-      nextAction,
-      nextDate: nextDate ? nextDate.toISOString() : null,
-      nextTime: nextTime ? nextTime.toISOString() : null,
-      notes,
+      visit_id:visit_Id,
+      rating:rating,
+      outcome:outcome,
+      report_notes:notes,
+      next_visit_date: nextDate? nextDate.toISOString().split("T")[0]: null,
+
     };
     console.log("Report payload:", payload);
-
-    // TODO: send to backend here
-    // After submit redirect to home (or wherever)
-    router.replace("/home");
+    const response=await fetch(`${BASE_URL}/visit-report`,{
+        method:'POST',
+        headers:{
+          "Content-Type":"application/json",
+          Authorization:`Bearer ${token}`,
+        },
+        body:JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (response.ok) {
+      Alert.alert("Success", "Report updated successfully!", [
+        { text: "OK", onPress: () => router.push("/field-visits") },
+      ]);
+    } else {
+      Alert.alert("Error", data.message || "Failed to add expense.");
+    }
   }
 
   return (
     <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView
+        behavior={"height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={0} // adjust if you have a header
+      >
       <ScrollView contentContainerStyle={styles.container}>
         {/* Header */}
         <View style={styles.headerRow}>
@@ -101,7 +143,7 @@ export default function ReportVisitScreen() {
           </View>
 
           {/* Met with */}
-          <Text style={styles.label}>Met with?</Text>
+          {/* <Text style={styles.label}>Met with?</Text>
           <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
@@ -111,18 +153,20 @@ export default function ReportVisitScreen() {
               onChangeText={setPerson}
             />
             <Ionicons name="person-outline" size={20} color="#666" />
-          </View>
+          </View> */}
 
           {/* Next action */}
-          <Text style={styles.label}>What's the next action?</Text>
-          <TextInput
-            style={[styles.input, styles.textarea]}
-            placeholder="Describe the next action required..."
-            placeholderTextColor="#888"
-            multiline
-            value={nextAction}
-            onChangeText={setNextAction}
-          />
+          <Text style={[styles.label,{marginTop:15}]}>Outcome</Text>
+          <View style={styles.pickerBox}>
+            <Picker
+              selectedValue={outcome}
+              onValueChange={(itemValue) => setOutcome(itemValue)}
+            >
+              <Picker.Item label="Select outcome" value="" />
+              <Picker.Item label="success" value="success" />
+              <Picker.Item label="failed" value="failed" />
+            </Picker>
+          </View>
 
           {/* Next action date */}
           <Text style={styles.label}>Next action date?</Text>
@@ -147,7 +191,7 @@ export default function ReportVisitScreen() {
           )}
 
           {/* Next action time */}
-          <Text style={styles.label}>Next action time?</Text>
+          {/* <Text style={styles.label}>Next action time?</Text>
           <TouchableOpacity
             style={styles.inputRow}
             onPress={() => setShowTimePicker(true)}
@@ -159,9 +203,9 @@ export default function ReportVisitScreen() {
                 : "Select time"}
             </Text>
             <Feather name="clock" size={18} color="#666" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
-          {showTimePicker && (
+          {/* {showTimePicker && (
             <DateTimePicker
               value={nextTime || new Date()}
               mode="time"
@@ -169,7 +213,7 @@ export default function ReportVisitScreen() {
               is24Hour={false}
               onChange={onTimeChange}
             />
-          )}
+          )} */}
 
           {/* Additional notes */}
           <Text style={styles.label}>Additional Notes (Optional)</Text>
@@ -189,6 +233,7 @@ export default function ReportVisitScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -312,5 +357,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
     fontWeight: "600",
+  },
+  pickerBox: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    marginBottom: 16,
   },
 });

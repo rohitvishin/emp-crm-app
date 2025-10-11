@@ -23,7 +23,7 @@ export default function VisitDetailScreen() {
 
   const updateVisit=async (visit:any)=>{
     const visit_Id=await AsyncStorage.getItem("visitId");
-    console.log(visit);
+    console.log(visit_Id);
     if(visit.started_visit_at!=null || visit.started_visit_at!=undefined ){
       setIsStarted(true)
     }
@@ -40,10 +40,13 @@ export default function VisitDetailScreen() {
       // if visit already started
       setIsStarted(true);
       setShowButton(true);
-    }else if(visit_Id!='' || visit_Id!=null){
+      console.log('show button')
+    }else if(visit_Id!='' && visit_Id!=null){
       // if another visit is active
       setShowButton(false);
+      console.log('dont show button')
     }else{
+      console.log('show button')
       setShowButton(true);
     }
     
@@ -112,7 +115,7 @@ export default function VisitDetailScreen() {
                       if (response.ok) {
                         if (actionType === "meeting_end") {
                           // End Visit → go to Report screen
-                          router.push("/field-visits");
+                          router.push("/report-visit");
                         }
                       } else {
                         Alert.alert("Error", data.message || "Failed to update visit");
