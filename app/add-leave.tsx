@@ -55,7 +55,7 @@ const AddLeaveScreen = () => {
     const data = await response.json();
     if (response.ok) {
       Alert.alert("Success", "Leave request added!", [
-        { text: "OK", onPress: () => router.push("/list-leave") },
+        { text: "OK", onPress: () => router.replace("/list-leave") },
       ]);
     } else {
       Alert.alert("Error", data.message || "Failed to add leave.");

@@ -3,7 +3,7 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type Expense = {
@@ -19,11 +19,17 @@ export default function ListExpense() {
   const router = useRouter();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchExpenses();
   }, []);
-
+  
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchExpenses();
+    setRefreshing(false);
+  };
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -69,23 +75,30 @@ export default function ListExpense() {
       </View>
 
       {/* Expense List */}
-      <FlatList<Expense>
-        data={expenses}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card}>
-            <View style={styles.cardRow}>
-              <Text style={styles.cardTitle}>{item.category}</Text>
-              <View style={[styles.statusBadge, item.status === "Pending" ? styles.scheduled : styles.completed]}>
-                <Text style={styles.statusText}>{item.status}</Text>
+      {loading ? (
+          <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
+        ) : (
+        <FlatList<Expense>
+          refreshing={refreshing}
+          onRefresh={onRefresh} // 👈 pull-to-refresh built-in
+          contentContainerStyle={{ paddingBottom: 20 }}
+          data={expenses}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.card}>
+              <View style={styles.cardRow}>
+                <Text style={styles.cardTitle}>{item.category}</Text>
+                <View style={[styles.statusBadge, item.status === "rejected" ? styles.rejected : styles.completed]}>
+                  <Text style={styles.statusText}>{item.status}</Text>
+                </View>
               </View>
-            </View>
-            <Text style={styles.cardSubtitle}>{item.description}</Text>
-            <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
-            <Text style={styles.arrow}>{item.amount} INR</Text>
-          </TouchableOpacity>
-        )}
-      />
+              <Text style={styles.cardSubtitle}>{item.description}</Text>
+              <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
+              <Text style={styles.arrow}>{item.amount} INR</Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -100,6 +113,7 @@ const styles = StyleSheet.create({
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
   scheduled: { backgroundColor: "#E6F0FF" },
   completed: { backgroundColor: "#E6FFE9" },
+  rejected: { backgroundColor: "#efa3a3ff" },
   statusText: { fontSize: 12, fontWeight: "600", color: "#333" },
   cardSubtitle: { fontSize: 14, color: "#555", marginBottom: 4 },
   cardDate: { fontSize: 13, color: "#777" },

@@ -28,11 +28,16 @@ export default function ListLeaves() {
   const router = useRouter();
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [loading, setLoading] = useState(false);
-
+  const [refreshing, setRefreshing] = useState(false);
+  
   useEffect(() => {
     fetchLeaves();
   }, []);
-
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchLeaves();
+    setRefreshing(false);
+  };
   const fetchLeaves = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
@@ -89,7 +94,7 @@ export default function ListLeaves() {
         <View
           style={[
             styles.statusBadge,
-            item.status === "Pending" ? styles.scheduled : styles.completed,
+            item.status === "Pending" ? styles.scheduled:( item.status === "Rejected" ? styles.rejected : styles.completed),
           ]}
         >
           <Text style={styles.statusText}>{item.status}</Text>
@@ -118,6 +123,9 @@ export default function ListLeaves() {
         <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
       ) : (
         <FlatList
+          refreshing={refreshing}
+          onRefresh={onRefresh} // 👈 pull-to-refresh built-in
+          contentContainerStyle={{ paddingBottom: 20 }}
           data={leaves}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
@@ -163,5 +171,6 @@ const styles = StyleSheet.create({
   },
   scheduled: { backgroundColor: "#FFD700" },
   completed: { backgroundColor: "#4CAF50" },
+  rejected: { backgroundColor: "#f09781ff" },
   statusText: { fontSize: 12, fontWeight: "600", color: "#fff" },
 });

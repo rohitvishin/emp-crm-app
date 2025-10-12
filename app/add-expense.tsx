@@ -2,6 +2,7 @@ import { BASE_URL } from "@/src/config";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -15,36 +16,106 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+const CLOUD_NAME = "dbxceuxef";
+const UPLOAD_PRESET = "crm_app";
 
 const AddExpenseScreen = () => {
-    const router = useRouter();
+  const router = useRouter();
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [receipt, setReceipt] = useState<any>(null);
-
+ 
   const handleReceiptUpload = async () => {
+    const mediaType =
+    (ImagePicker as any).MediaType?.Image || ImagePicker.MediaTypeOptions.Images;
+
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: mediaType,
       allowsEditing: true,
       quality: 0.7,
-      base64: true,
     });
 
     if (!result.canceled) {
-      console.log(result.assets[0].uri);
-      setReceipt(result.assets[0].uri);
+      const originalUri = result.assets[0].uri;
+      // 👇 Compress + resize before upload
+      const manipulated = await ImageManipulator.manipulateAsync(
+        originalUri,
+        [{ resize: { width: 1000 } }],   // reduce long edge to 1000 px
+        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setReceipt(manipulated.uri);
     }
   };
 
+  const uploadToCloudinary = async (imageUri: string) => {
+      try {
+        setUploading(true);
+
+        const data = new FormData();
+        data.append("file", {
+          uri: imageUri,
+          type: "image/jpeg",
+          name: `receipt_${Date.now()}.jpg`,
+        } as any);
+        data.append("upload_preset", UPLOAD_PRESET);
+        data.append("cloud_name", CLOUD_NAME); // ✅ Important for unsigned uploads
+        data.append("folder", "employee_app_receipts"); // optional
+
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+          {
+            method: "POST",
+            body: data,
+            headers: {
+              "Accept": "application/json", // speeds up parsing
+            },
+          }
+        );
+
+        const result = await response.json();
+        console.log("Cloudinary upload result:", result);
+
+        setUploading(false);
+
+        if (result.secure_url) {
+          console.log("✅ Cloudinary upload URL:", result.secure_url);
+          return result.secure_url;
+        } else {
+          console.error("❌ Cloudinary error:", result);
+          throw new Error(result.error?.message || "Upload failed");
+        }
+      } catch (error) {
+        setUploading(false);
+        console.error("Cloudinary upload error:", error);
+        Alert.alert("Error", "Failed to upload receipt. Please try again.");
+        return null;
+      }
+  };
+
   const handleSubmit = async () => {
+    // disable handleSubmit button
+
+
+    if (!category || !amount || !description) {
+      Alert.alert("Validation Error", "Please fill all required fields.");
+      return;
+    }
+
+    let receiptUrl = null;
+    if (receipt) {
+      receiptUrl = await uploadToCloudinary(receipt);
+      if (!receiptUrl) return; // stop if upload failed
+    }
     const token=await AsyncStorage.getItem('token');
     const payload={
       category:category,
       amount:amount,
       description:description,
-      receipt:'receipt',
+      receipt: receiptUrl || "",
     }
+    console.log("Submitting expense:", payload);
     // handle API call here
     const response=await fetch(`${BASE_URL}/add-expenses`,{
         method:'POST',
@@ -112,7 +183,7 @@ const AddExpenseScreen = () => {
       />
 
       {/* Receipt */}
-      <Text style={styles.label}>Receipt</Text>
+      <Text style={styles.label}>Receipt (optional)</Text>
       <TouchableOpacity style={styles.uploadBox} onPress={handleReceiptUpload}>
         {receipt ? (
           <Image source={{ uri: receipt }} style={styles.receiptImage} />
@@ -122,8 +193,8 @@ const AddExpenseScreen = () => {
       </TouchableOpacity>
 
       {/* Submit Button */}
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitText}>Submit Expense</Text>
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={uploading}>
+        <Text style={styles.submitText}>{uploading ? "Uploading..." : "Submit Expense"}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
