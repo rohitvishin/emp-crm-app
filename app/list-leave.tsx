@@ -6,6 +6,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   ListRenderItem,
   StyleSheet,
   Text,
@@ -29,7 +30,7 @@ export default function ListLeaves() {
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   useEffect(() => {
     fetchLeaves();
   }, []);
@@ -69,9 +70,9 @@ export default function ListLeaves() {
               }) +
               (diffDays > 1
                 ? ` - ${to.toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                  })} (${diffDays} days)`
+                  day: "numeric",
+                  month: "short",
+                })} (${diffDays} days)`
                 : ` (${diffDays} day)`),
             status: item.status.charAt(0).toUpperCase() + item.status.slice(1),
           };
@@ -94,7 +95,7 @@ export default function ListLeaves() {
         <View
           style={[
             styles.statusBadge,
-            item.status === "Pending" ? styles.scheduled:( item.status === "Rejected" ? styles.rejected : styles.completed),
+            item.status === "Pending" ? styles.scheduled : (item.status === "Rejected" ? styles.rejected : styles.completed),
           ]}
         >
           <Text style={styles.statusText}>{item.status}</Text>
@@ -121,6 +122,14 @@ export default function ListLeaves() {
       {/* Loader */}
       {loading ? (
         <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
+      ) : leaves.length === 0 ? (
+        // 👇 No data image
+        <View style={{ alignItems: "center", marginTop: 80 }}>
+          <Image
+            source={require("../assets/images/no-data.png")}
+            style={{ width: 150, height: 150, resizeMode: "contain" }}
+          />
+        </View>
       ) : (
         <FlatList
           refreshing={refreshing}

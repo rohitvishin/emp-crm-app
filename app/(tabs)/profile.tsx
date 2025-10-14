@@ -1,5 +1,5 @@
 import { BASE_URL } from "@/src/config";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -68,12 +68,12 @@ const ProfileScreen = () => {
       <View style={styles.profileSection}>
         <View style={styles.profileImageWrapper}>
           <Image
-            source={{ uri: "https://cdn-icons-png.flaticon.com/512/2922/2922510.png" }}
+            source={require("../../assets/images/profile-pic.png")}
             style={styles.profileImage}
           />
-          <TouchableOpacity style={styles.cameraIcon}>
+          {/* <TouchableOpacity style={styles.cameraIcon}>
             <Ionicons name="camera" size={16} color="#fff" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
 
@@ -82,25 +82,22 @@ const ProfileScreen = () => {
         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.label}>Full Name</Text>
           <Text style={styles.value}>{fullname}</Text>
-          <MaterialIcons name="chevron-right" size={22} color="#aaa" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.label}>Mobile</Text>
           <Text style={styles.value}>{mobile}</Text>
-          <MaterialIcons name="chevron-right" size={22} color="#aaa" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.label}>Email</Text>
           <Text style={styles.value}>{email}</Text>
-          <MaterialIcons name="chevron-right" size={22} color="#aaa" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.label}>Department</Text>
           <Text style={styles.value}>Engineering</Text>
-          <MaterialIcons name="chevron-right" size={22} color="#aaa" />
+          {/* <MaterialIcons name="chevron-right" size={22} color="#aaa" /> */}
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.infoCard}>
@@ -108,6 +105,9 @@ const ProfileScreen = () => {
           <View style={styles.managerRow}>
             <Text style={styles.value}>Sarah Johnson</Text>
           </View>
+        </TouchableOpacity>
+         <TouchableOpacity style={[styles.infoCard,styles.InfoMenu]}>
+          <Text style={styles.value}>Change Password</Text>
           <MaterialIcons name="chevron-right" size={22} color="#aaa" />
         </TouchableOpacity>
         {/* Logout */}
@@ -147,8 +147,8 @@ const styles = StyleSheet.create({
   profileImage: {
     width: 90,
     height: 90,
-    borderRadius: 45,
-    backgroundColor: "#f0f0f0",
+    borderRadius: 0,
+    // backgroundColor: "#f0f0f0",
   },
   cameraIcon: {
     position: "absolute",
@@ -161,8 +161,11 @@ const styles = StyleSheet.create({
   infoSection: {
     marginHorizontal: 16,
   },
-  infoCard: {
+  InfoMenu:{
     backgroundColor: "#f9f9f9",
+  },
+  infoCard: {
+    // backgroundColor: "#f9f9f9",
     borderRadius: 10,
     padding: 16,
     marginBottom: 12,

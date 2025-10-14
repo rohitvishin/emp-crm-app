@@ -3,7 +3,7 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type Expense = {
@@ -77,7 +77,15 @@ export default function ListExpense() {
       {/* Expense List */}
       {loading ? (
           <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
-        ) : (
+        ) : expenses.length === 0 ? (
+                // 👇 No data image
+                <View style={{ alignItems: "center", marginTop: 80 }}>
+                  <Image
+                    source={require("../../assets/images/no-data.png")}
+                    style={{ width: 150, height: 150, resizeMode: "contain" }}
+                  />
+                </View>
+              ) : (
         <FlatList<Expense>
           refreshing={refreshing}
           onRefresh={onRefresh} // 👈 pull-to-refresh built-in

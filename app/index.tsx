@@ -1,10 +1,9 @@
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Image, KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BASE_URL } from "../src/config";
 
@@ -86,77 +85,93 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View></View>
-      
-        <LinearGradient
-          colors={["#667eea", "#764ba2"]}
-          style={styles.logoWrapper}
-        >
-          <MaterialIcons name="login" size={40} color="white" />         
-        </LinearGradient>
-        
-     
-      <Text style={styles.welcome}>Welcome Back</Text>
-      <Text style={styles.subText}>Sign in to your employee account</Text>
-
-      <View style={styles.formBox}>
-        <Text style={styles.formTitle}>Sign In</Text>
-        <Text style={styles.formSubtitle}>Enter your credentials to access your account</Text>
-
-        <Text style={styles.label}>Mobile</Text>
-        <View style={styles.inputWrapper}>
-          <MaterialIcons name="phone" size={20} color="#999" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your mobile number"
-            value={mobile}
-            onChangeText={setMobile}
-            keyboardType="email-address"
-          />
+    <SafeAreaView style={styles.safe}>
+       <KeyboardAvoidingView
+              behavior={"height"}
+              style={{ flex: 1 }}
+              keyboardVerticalOffset={0} // adjust if you have a header
+            >
+        <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.profileSection}>
+          <View style={styles.profileImageWrapper}>
+              <View
+                style={styles.profileImage}
+              >
+                <Image
+                  source={require("../assets/images/login-icon.png")}
+                  style={{ width: 110, height: 140, resizeMode: "contain" }}
+                />   
+              </View>
+          </View>
         </View>
+        
+        <Text style={styles.welcome}>Employee Login</Text>
 
-        <Text style={styles.label}>Password</Text>
-        <View style={styles.inputWrapper}>
-          <MaterialIcons name="lock" size={20} color="#999" style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your password"
-            secureTextEntry={!showPassword}
-            value={password}
-            onChangeText={setPassword}
-          />
-          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-            <Feather name={showPassword ? "eye-off" : "eye"} size={20} color="#999" />
+        <View style={styles.formBox}>
+          <Text style={styles.formTitle}>Sign In</Text>
+          <Text style={styles.formSubtitle}>Enter your employee credentials</Text>
+
+          <Text style={styles.label}>Mobile</Text>
+          <View style={styles.inputWrapper}>
+            <MaterialIcons name="phone" size={20} color="#999" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your mobile number"
+              value={mobile}
+              onChangeText={setMobile}
+              keyboardType="email-address"
+            />
+          </View>
+
+          <Text style={styles.label}>Password</Text>
+          <View style={styles.inputWrapper}>
+            <MaterialIcons name="lock" size={20} color="#999" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your password"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Feather name={showPassword ? "eye-off" : "eye"} size={20} color="#999" />
+            </TouchableOpacity>
+          </View>
+         
+           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogin}>
+            <Text style={styles.logoutText}>Sign In</Text>
           </TouchableOpacity>
         </View>
-        <LinearGradient
-          colors={["#667eea", "#764ba2"]}
-          style={{
-            paddingVertical: 12,
-            borderRadius: 8,
-            alignItems: "center",
-          }}
-        >
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-                  <Text style={styles.buttonText}>Sign In</Text>
-        </TouchableOpacity>
-        </LinearGradient>
-        
-
-        {/* <TouchableOpacity>
-          <Text style={styles.forgot}>Forgot your password?</Text>
-        </TouchableOpacity> */}
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", alignItems: "center", padding: 20 },
+  logoutBtn: { marginTop: 20, padding: 12, backgroundColor: "#000", borderRadius: 8, alignItems: "center" },
+  logoutText: { color: "#fff", fontWeight: "600" },
+  profileSection: {
+    alignItems: "center",
+    marginVertical: 20,
+  },
+  profileImageWrapper: {
+    position: "relative",
+  },
+  profileImage: {
+    width: 110,
+    height: 100,
+  },
+  safe: { flex: 1, backgroundColor: "#f3f4f6" },
+  container: {
+    color:'#000',
+    alignItems: "center",
+    padding: 20,
+    paddingBottom: 36,
+  },
   title: { fontSize: 22, fontWeight: "600", marginBottom: 20 },
   logoWrapper: { width: 70, height: 70, borderRadius: 35, justifyContent: "center", alignItems: "center", marginBottom: 15 },
-  welcome: { fontSize: 20, fontWeight: "700", marginBottom: 5 },
+  welcome: { fontSize: 18, fontWeight: "500", marginBottom: 25,marginTop: 25 },
   subText: { fontSize: 14, color: "#777", marginBottom: 20 },
   formBox: { width: "100%", backgroundColor: "#f9f9f9", padding: 20, borderRadius: 10 },
   formTitle: { fontSize: 16, fontWeight: "600", marginBottom: 4 },

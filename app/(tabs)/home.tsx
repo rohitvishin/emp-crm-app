@@ -99,12 +99,12 @@ export default function HomeScreen() {
       {/* Greeting */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Good Morning</Text>
+          <Text style={styles.greeting}>Welcome</Text>
           <Text style={styles.name}>John Smith</Text>
         </View>
         <TouchableOpacity onPress={() => router.push("/profile")}>
             <Image
-          source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }}
+          source={require("../../assets/images/profile-pic.png")}
           style={styles.profileIcon}
         />
           </TouchableOpacity>
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   profileIcon: {
     width: 50,
     height: 50,
-    borderRadius: 25,
+    // borderRadius: 25,
     alignItems: "center",
     justifyContent: "center",
   },
