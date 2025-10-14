@@ -3,7 +3,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 const ProfileScreen = () => {
   const router = useRouter();
@@ -59,6 +59,7 @@ const ProfileScreen = () => {
   }
   return (
     <SafeAreaView style={styles.container}>
+      <ScrollView>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Profile</Text>
@@ -106,7 +107,7 @@ const ProfileScreen = () => {
             <Text style={styles.value}>Sarah Johnson</Text>
           </View>
         </TouchableOpacity>
-         <TouchableOpacity style={[styles.infoCard,styles.InfoMenu]}>
+         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.value}>Change Password</Text>
           <MaterialIcons name="chevron-right" size={22} color="#aaa" />
         </TouchableOpacity>
@@ -115,6 +116,7 @@ const ProfileScreen = () => {
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
       </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -161,11 +163,8 @@ const styles = StyleSheet.create({
   infoSection: {
     marginHorizontal: 16,
   },
-  InfoMenu:{
-    backgroundColor: "#f9f9f9",
-  },
   infoCard: {
-    // backgroundColor: "#f9f9f9",
+    backgroundColor: "#f9f9f9",
     borderRadius: 10,
     padding: 16,
     marginBottom: 12,
@@ -197,7 +196,7 @@ const styles = StyleSheet.create({
     height: 25,
     borderRadius: 12,
   },
-  logoutBtn: { marginTop: 20, padding: 12, backgroundColor: "#000", borderRadius: 8, alignItems: "center" },
+  logoutBtn: { marginBottom:20,marginTop: 20, padding: 12, backgroundColor: "#000", borderRadius: 8, alignItems: "center" },
   logoutText: { color: "#fff", fontWeight: "600" },
 });
 
