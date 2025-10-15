@@ -8,6 +8,8 @@ import {
   FlatList,
   Image,
   ListRenderItem,
+  RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -124,12 +126,18 @@ export default function ListLeaves() {
         <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
       ) : leaves.length === 0 ? (
         // 👇 No data image
+         <ScrollView
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
         <View style={{ alignItems: "center", marginTop: 80 }}>
           <Image
             source={require("../assets/images/no-data.png")}
             style={{ width: 150, height: 150, resizeMode: "contain" }}
           />
         </View>
+        </ScrollView>
       ) : (
         <FlatList
           refreshing={refreshing}

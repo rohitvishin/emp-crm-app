@@ -12,7 +12,7 @@ export default function RootLayout() {
         <SafeAreaView
           style={{
             flex: 1,
-            backgroundColor: "#aaa8a8ff",
+            backgroundColor: "#171616ff",
             marginTop: -insets.top,
           }}
         >
@@ -33,6 +33,7 @@ export default function RootLayout() {
             <Stack.Screen name="add-expense" />
             <Stack.Screen name="add-leave" />
             <Stack.Screen name="list-leave" />
+            <Stack.Screen name="change-password" />
           </Stack>
         </SafeAreaView>
       </SafeAreaProvider>

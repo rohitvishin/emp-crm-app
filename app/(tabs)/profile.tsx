@@ -1,5 +1,4 @@
 import { BASE_URL } from "@/src/config";
-import { MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -107,10 +106,10 @@ const ProfileScreen = () => {
             <Text style={styles.value}>Sarah Johnson</Text>
           </View>
         </TouchableOpacity>
-         <TouchableOpacity style={styles.infoCard}>
+        {/* <TouchableOpacity onPress={()=>router.push("/change-password")} style={styles.infoCard}>
           <Text style={styles.value}>Change Password</Text>
           <MaterialIcons name="chevron-right" size={22} color="#aaa" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         {/* Logout */}
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
         <Text style={styles.logoutText}>Logout</Text>

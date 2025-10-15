@@ -20,6 +20,9 @@ export default function HomeScreen() {
   // check punch_in_time in AsyncStorage to determine if user is checked in
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [LastPunchIn, setLastPunchIn] = useState('');
+  const [user_name, setUserName] = useState('');
+  const [total_visit, setTotalVisit] = useState('');
+  const [total_leave, setTotalLeave] = useState('');
   const checkBtnColor1= isCheckedIn? "#de8181ff" : "#000";
   const checkBtnColor2= isCheckedIn? "#c63030ff" : "#000";
   const menuItems = [
@@ -45,8 +48,35 @@ export default function HomeScreen() {
       }
     };
     checkPunchInStatus();
+    fetchDashboardData();
   }, []);
 
+  const fetchDashboardData = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const response = await fetch(`${BASE_URL}/home`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Handle dashboard data if needed
+        console.log(data);
+        setUserName(data.data.user_name);
+        setTotalLeave(data.data.total_leaves);
+        setTotalVisit(data.data.total_visits);
+      } else {
+        Alert.alert("Error", data.message || "Failed to fetch dashboard data");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Something went wrong!");
+    }
+  }
   const handleCheckInOut = () => {
     const action = isCheckedIn ? "punch-out" : "punch-in";
     const label = isCheckedIn ? "Check-Out" : "Check-In";
@@ -99,8 +129,8 @@ export default function HomeScreen() {
       {/* Greeting */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Welcome</Text>
-          <Text style={styles.name}>John Smith</Text>
+          <Text style={styles.name}>Welcome</Text>
+          <Text style={styles.greeting}>{user_name}</Text>
         </View>
         <TouchableOpacity onPress={() => router.push("/profile")}>
             <Image
@@ -115,7 +145,7 @@ export default function HomeScreen() {
           style={styles.singleCard}
           // onPress={() => router.push("/list-leave")}
         >
-          <Text style={{ fontSize: 20, color: "#764ba2" }}>2</Text>
+          <Text style={{ fontSize: 20, color: "#764ba2" }}>{total_leave?total_leave:0}</Text>
           <Text style={styles.menuText}>Total Leaves</Text>
         </TouchableOpacity>
 
@@ -123,7 +153,7 @@ export default function HomeScreen() {
           style={styles.singleCard}
           // onPress={() => router.push("/field-visits")}
         >
-          <Text style={{ fontSize: 20, color: "#764ba2" }}>2</Text>
+          <Text style={{ fontSize: 20, color: "#764ba2" }}>{total_visit?total_visit:0}</Text>
           <Text style={styles.menuText}>Total Visit</Text>
         </TouchableOpacity>
       </View>
