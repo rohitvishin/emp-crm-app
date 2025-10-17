@@ -16,8 +16,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-const CLOUD_NAME = "dbxceuxef";
-const UPLOAD_PRESET = "crm_app";
+import { CLOUD_NAME, UPLOAD_PRESET } from "../src/config";
 
 const AddExpenseScreen = () => {
   const router = useRouter();

@@ -94,14 +94,11 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.profileSection}>
           <View style={styles.profileImageWrapper}>
-              <View
-                style={styles.profileImage}
-              >
-                <Image
+                    <Image
                   source={require("../assets/images/login-icon.png")}
-                  style={{ width: 110, height: 140, resizeMode: "contain" }}
+                  style={{ width: 200, height: 200 }}
                 />   
-              </View>
+
           </View>
         </View>
         
@@ -157,10 +154,6 @@ const styles = StyleSheet.create({
   },
   profileImageWrapper: {
     position: "relative",
-  },
-  profileImage: {
-    width: 110,
-    height: 100,
   },
   safe: { flex: 1, backgroundColor: "#f3f4f6" },
   container: {

@@ -22,32 +22,38 @@ export default function VisitDetailScreen() {
   });
 
   const updateVisit=async (visit:any)=>{
-    const visit_Id=await AsyncStorage.getItem("visitId");
-    console.log(visit_Id);
-    if(visit.started_visit_at!=null || visit.started_visit_at!=undefined ){
-      setIsStarted(true)
-    }
-    if(visit.check_in_time!=null || visit.check_in_time!=undefined ){
-      setIsCheckedIn(true)
-    }
-    if(visit.check_out_time!=null || visit.check_out_time!=undefined ){
-      setIsCheckedOut(true)
-    }
-    if(visit.id!=null || visit.id!=undefined){
-      setVisitId(visit.id)
-    }
-    if(visit_Id == visit.id){
-      // if visit already started
-      setIsStarted(true);
-      setShowButton(true);
-      console.log('show button')
-    }else if(visit_Id!='' && visit_Id!=null){
-      // if another visit is active
-      setShowButton(false);
-      console.log('dont show button')
-    }else{
-      console.log('show button')
-      setShowButton(true);
+    setVisitId(visit.id);
+    console.log(visit.id)
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const response = await fetch(`${BASE_URL}/visit-detail`, {
+        method: "POST",
+        headers: {
+          "Content-Type":"application/json",
+          Authorization:`Bearer ${token}`,
+        },
+        body:JSON.stringify({visit_id:visit.id})
+      });
+
+      const data = await response.json();
+      if (response.ok && data.visit) {
+        console.log(data.visit);
+        if(data.other_active_visit == false){
+          setShowButton(true);
+          console.log('show button')
+        }
+        if(data.visit.started_visit_at){
+          setIsStarted(true)
+        }
+        if(data.visit.check_in_time){
+          setIsCheckedIn(true)
+        }
+        if(data.visit.check_out_time){
+          setIsCheckedOut(true)
+        }
+      }
+    } catch (error) {
+      console.log("Error fetching visit details:", error);
     }
     
   }
@@ -83,14 +89,11 @@ export default function VisitDetailScreen() {
                     if (!isStarted) {
                       setIsStarted(true);
                       actionType = "start_visit";
-                      // update visitId in AsyncStorage
-                      await AsyncStorage.setItem("visitId", visit.id);
                       startLocationTracking();
                     } else if (isStarted && !isCheckIn) {
                       setIsCheckedIn(true);
                       actionType = "reached_at";
                        stopLocationTracking();
-                      await AsyncStorage.removeItem("visitId");
                     } else if (isStarted && isCheckIn && !isCheckOut) {
                       setIsCheckedOut(true);
                       actionType = "meeting_end";
@@ -146,8 +149,8 @@ export default function VisitDetailScreen() {
         <View style={styles.clientRow}>
           <Feather name="user" size={32} color="#666" />
           <View style={{ marginLeft: 10 }}>
-            <Text style={styles.clientName}>Client: {visit.customer}</Text>
-            <Text style={styles.clientType}>Visit Status: {isCheckIn ? (isCheckOut ? "Completed" : "Reached Location") : "Pending"}</Text>
+            <Text style={styles.clientName}>Client: {visit.customer?visit.customer:''}</Text>
+            <Text style={styles.clientType}>Visit Status: {isCheckIn ? (isCheckOut ? "Completed" : "Reached Location") : (isStarted? "Ongoing":"Pending")}</Text>
           </View>
         </View>
       </View>
@@ -155,25 +158,34 @@ export default function VisitDetailScreen() {
       {/* Client Address */}
       <View style={styles.card}>
         <Text style={styles.label}>Visit Detail</Text>
-        <Text style={styles.text}>Purpose: {visit.purpose}</Text>
-        <Text style={styles.text}>Date & Time: {visit.visit_start_time}</Text>
-        <Text style={styles.text}>Notes: {visit.notes}</Text>
+        <Text style={styles.text}>Purpose: {visit.purpose?visit.purpose:''}</Text>
+        <Text style={styles.text}>Date & Time: {visit.visit_start_time?visit.visit_start_time:''}</Text>
+        <Text style={styles.text}>Notes: {visit.notes?visit.notes:''}</Text>
       </View>
 
       {/* Client Location */}
-      <View style={styles.card}>
-        <Text style={styles.label}>Meeting Location: {visit.location}</Text>
-        <TouchableOpacity onPress={openMap} style={styles.mapView}>
-          <Feather name="map-pin" size={28} color="#fff" />
-          <Text style={styles.mapText}>Map View</Text>
-          <Text style={styles.mapCoords}>{visit.meeting_latitude}°, {visit.meeting_longitude}°</Text>
-        </TouchableOpacity>
-      </View>
       {showButton && !isCheckOut && (
+        <View>
+          <View style={styles.card}>
+            <Text style={styles.label}>Meeting Location: {visit.location?visit.location:''}</Text>
+            <TouchableOpacity onPress={openMap} style={styles.mapView}>
+              <Feather name="map-pin" size={28} color="#fff" />
+              <Text style={styles.mapText}>Get Direction</Text>
+              <Text style={styles.mapCoords}>{visit.meeting_latitude?visit.meeting_latitude:''}°, {visit.meeting_longitude?visit.meeting_longitude:''}°</Text>
+            </TouchableOpacity>
+        </View>
         <TouchableOpacity style={styles.startBtn} onPress={handleVisitToggle}>
           <Feather name="play" size={18} color="#fff" />
           <Text style={styles.startBtnText}>
             {isStarted ? (isCheckIn ? "End Meeting" : "Reached Location") : "Start Visit"}
+          </Text>
+        </TouchableOpacity>
+        </View>
+      )}
+      {isCheckOut && (
+        <TouchableOpacity style={styles.ViewReportBtn} onPress={()=>router.push('/report-visit')}>
+          <Text style={styles.ViewReportText}>
+            Check Report
           </Text>
         </TouchableOpacity>
       )}
@@ -226,7 +238,8 @@ const styles = StyleSheet.create({
   },
   clientType: {
     fontSize: 13,
-    color: "#777",
+    fontWeight: "500",
+    color: "#438819ff",
   },
   text: {
     fontSize: 14,
@@ -273,6 +286,26 @@ const styles = StyleSheet.create({
   },
   startBtnText: {
     color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 6,
+  },
+  ViewReportBtn: {
+    width: 200,
+    flexDirection: "row",
+    marginLeft:'auto',
+    marginRight:'auto',
+    marginTop:20,
+    backgroundColor: "#ffffffff",
+    borderBlockColor:'#7664ddff',
+    borderWidth:2,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ViewReportText: {
+    color: "#7664ddff",
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 6,

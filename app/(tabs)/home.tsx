@@ -63,6 +63,12 @@ export default function HomeScreen() {
       });
 
       const data = await response.json();
+      if (response.status === 401 || data?.message === "Unauthenticated.") {
+        await AsyncStorage.removeItem("token"); // clear token
+        Alert.alert("Session expired", "Please log in again.");
+        router.replace("/"); // Redirect to login screen
+        return null;
+      }
 
       if (response.ok) {
         // Handle dashboard data if needed
