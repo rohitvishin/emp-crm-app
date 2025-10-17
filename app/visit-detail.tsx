@@ -23,7 +23,6 @@ export default function VisitDetailScreen() {
 
   const updateVisit=async (visit:any)=>{
     setVisitId(visit.id);
-    console.log(visit.id)
     try {
       const token = await AsyncStorage.getItem("token");
       const response = await fetch(`${BASE_URL}/visit-detail`, {
@@ -37,10 +36,8 @@ export default function VisitDetailScreen() {
 
       const data = await response.json();
       if (response.ok && data.visit) {
-        console.log(data.visit);
         if(data.other_active_visit == false){
           setShowButton(true);
-          console.log('show button')
         }
         if(data.visit.started_visit_at){
           setIsStarted(true)
@@ -68,7 +65,6 @@ export default function VisitDetailScreen() {
   const openMap = () => {
     const latitude = visit.meeting_latitude;
     const longitude = visit.meeting_longitude;
-    console.log(longitude)
     const label = "Client Location";
     const url =`geo:${latitude},${longitude}?q=${latitude},${longitude}(${label})`
     Linking.openURL(url).catch(() =>
@@ -104,7 +100,6 @@ export default function VisitDetailScreen() {
                         action_type:actionType,
                         visit_id:visitId,
                       }
-                      console.log(payload);
                       const token=await AsyncStorage.getItem('token');
                       const response=await fetch(`${BASE_URL}/update-visit`,{
                           method:'POST',
@@ -185,7 +180,7 @@ export default function VisitDetailScreen() {
       {isCheckOut && (
         <TouchableOpacity style={styles.ViewReportBtn} onPress={()=>router.push('/report-visit')}>
           <Text style={styles.ViewReportText}>
-            Check Report
+            Check Reports
           </Text>
         </TouchableOpacity>
       )}
@@ -296,8 +291,7 @@ const styles = StyleSheet.create({
     marginLeft:'auto',
     marginRight:'auto',
     marginTop:20,
-    backgroundColor: "#ffffffff",
-    borderBlockColor:'#7664ddff',
+    borderBlockColor:'#444',
     borderWidth:2,
     padding: 14,
     borderRadius: 8,
@@ -305,7 +299,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   ViewReportText: {
-    color: "#7664ddff",
+    color: "#444",
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 6,
