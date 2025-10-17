@@ -40,17 +40,16 @@ const ProfileScreen = () => {
         },
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
-      if (response.ok && data) {
-        // Transform API data to match UI structure
-        setName(data.name);
-        setMobile(data.mobile);
-        setEmail(data.email);
-        setManager(data.name);
-        setDepartment(data.name);
+      if (response.ok && result?.data) {
+        setManager(result.data.manager.name); // ✅ works
+        setDepartment(result.data.department.name); // ✅ works
+        setName(result.data.name);
+        setMobile(result.data.mobile);
+        setEmail(result.data.email);
       } else {
-        console.error("Error fetching visits:", data);
+        console.error("Error fetching visits:", result);
       }
     } catch (error) {
       console.error("Fetch visits error:", error);
@@ -96,14 +95,14 @@ const ProfileScreen = () => {
 
         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.label}>Department</Text>
-          <Text style={styles.value}>Engineering</Text>
+          <Text style={styles.value}>{department?department:''}</Text>
           {/* <MaterialIcons name="chevron-right" size={22} color="#aaa" /> */}
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.label}>Reporting Manager</Text>
           <View style={styles.managerRow}>
-            <Text style={styles.value}>Sarah Johnson</Text>
+            <Text style={styles.value}>{manager?manager:''}</Text>
           </View>
         </TouchableOpacity>
         {/* <TouchableOpacity onPress={()=>router.push("/change-password")} style={styles.infoCard}>

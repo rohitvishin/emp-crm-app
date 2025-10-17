@@ -5,14 +5,18 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Image,
+  RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
@@ -23,35 +27,26 @@ export default function HomeScreen() {
   const [user_name, setUserName] = useState('');
   const [total_visit, setTotalVisit] = useState('');
   const [total_leave, setTotalLeave] = useState('');
-  const checkBtnColor1= isCheckedIn? "#de8181ff" : "#000";
-  const checkBtnColor2= isCheckedIn? "#c63030ff" : "#000";
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const checkBtnColor1 = isCheckedIn ? "#de8181ff" : "#000";
+  const checkBtnColor2 = isCheckedIn ? "#c63030ff" : "#000";
   const menuItems = [
     { id: "1", title: "Field Visits", icon: "map-pin", route: "/field-visits" },
     { id: "2", title: "Expenses", icon: "file-text", route: "/list-expense" },
     { id: "3", title: "Leave Requests", icon: "calendar", route: "/list-leave" },
   ];
   useEffect(() => {
-    const checkPunchInStatus = async () => {
-      const punchInTime = await AsyncStorage.getItem("punch_in_time");
-      if (punchInTime!='' && punchInTime!=null) {
-        // if punchInTIme is not today's date, remove it from storage
-        const punchDate = new Date(punchInTime).toDateString();
-        const todayDate = new Date().toDateString();
-        if(punchDate !== todayDate){
-          await AsyncStorage.removeItem("punch_in_time");
-          setIsCheckedIn(false);
-          setLastPunchIn('');
-          return;
-        }
-        setIsCheckedIn(true);
-        setLastPunchIn(punchInTime);
-      }
-    };
-    checkPunchInStatus();
     fetchDashboardData();
   }, []);
-
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchDashboardData();
+    setRefreshing(false);
+  };
   const fetchDashboardData = async () => {
+    setLoading(true);
     try {
       const token = await AsyncStorage.getItem("token");
       const response = await fetch(`${BASE_URL}/home`, {
@@ -76,6 +71,15 @@ export default function HomeScreen() {
         setUserName(data.data.user_name);
         setTotalLeave(data.data.total_leaves);
         setTotalVisit(data.data.total_visits);
+        if (data.data.attendance && data.data.attendance.login_time) {
+          setLastPunchIn(data.data.attendance.login_time?.slice(0, 5));
+          setIsCheckedIn(true);
+        }
+        if (data.data.attendance && data.data.attendance.logout_time) {
+          setLastPunchIn('');
+          setIsCheckedIn(false);
+        }
+        setLoading(false);
       } else {
         Alert.alert("Error", data.message || "Failed to fetch dashboard data");
       }
@@ -103,20 +107,18 @@ export default function HomeScreen() {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${token}`,
                 },
-               
+
               });
 
               const data = await response.json();
 
               if (response.ok) {
                 Alert.alert("Success", `${label} successful!`);
-                if(!isCheckedIn){
-                  const punchInTime = new Date(data.attendance.created_at).toLocaleString();
-                  await AsyncStorage.setItem("punch_in_time", punchInTime.toString());
-                  setLastPunchIn(punchInTime.toString());
-                }else{
+                if (!isCheckedIn) {
+                  const punchInTime = new Date(data.attendance.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+                  setLastPunchIn(punchInTime);
+                } else {
                   setLastPunchIn('');
-                  await AsyncStorage.removeItem("punch_in_time");
                 }
                 setIsCheckedIn(!isCheckedIn);
               } else {
@@ -132,72 +134,83 @@ export default function HomeScreen() {
   };
   return (
     <SafeAreaView style={styles.container}>
-      {/* Greeting */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.name}>Welcome</Text>
-          <Text style={styles.greeting}>{user_name}</Text>
-        </View>
-        <TouchableOpacity onPress={() => router.push("/profile")}>
+      <ScrollView refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }>
+        {/* Greeting */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.name}>Welcome</Text>
+            <Text style={styles.greeting}>{user_name}</Text>
+          </View>
+          <TouchableOpacity onPress={() => router.push("/profile")}>
             <Image
-          source={require("../../assets/images/profile-pic.png")}
-          style={styles.profileIcon}
-        />
-          </TouchableOpacity>
-      </View>
-      {/* Dashboard Cards */}
-      <View style={styles.Card}>
-        <TouchableOpacity
-          style={styles.singleCard}
-          // onPress={() => router.push("/list-leave")}
-        >
-          <Text style={{ fontSize: 20, color: "#764ba2" }}>{total_leave?total_leave:0}</Text>
-          <Text style={styles.menuText}>Total Leaves</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.singleCard}
-          // onPress={() => router.push("/field-visits")}
-        >
-          <Text style={{ fontSize: 20, color: "#764ba2" }}>{total_visit?total_visit:0}</Text>
-          <Text style={styles.menuText}>Total Visit</Text>
-        </TouchableOpacity>
-      </View>
-      
-      {/* Menu List */}
-      <FlatList
-        data={menuItems}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.menuCard}
-          onPress={() => router.push(item.route as any)}
-          >
-            <Feather name={item.icon as any} size={20} color="#764ba2" />
-            <Text style={styles.menuText}>{item.title}</Text>
-            <Feather
-              name="chevron-right"
-              size={20}
-              color="#999"
-              style={{ marginLeft: "auto" }}
+              source={require("../../assets/images/profile-pic.png")}
+              style={styles.profileIcon}
             />
           </TouchableOpacity>
-        )}
-      />
-
-      {/* Check In / Out Buttons */}
-      <View style={styles.TimeContainer}><Text>{LastPunchIn}</Text></View>
-      <View style={styles.checkContainer}>
-        <TouchableOpacity onPress={handleCheckInOut} style={{ flex: 1, marginRight: 8 }}>
-          <LinearGradient
-            colors={[checkBtnColor1, checkBtnColor2]}
-            style={styles.checkButton}
+        </View>
+        {/* Dashboard Cards */}
+        <View style={styles.Card}>
+          <TouchableOpacity
+            style={styles.singleCard}
+          // onPress={() => router.push("/list-leave")}
           >
-            <Feather name="clock" size={20} color="#fff" />
-            <Text style={styles.checkText}>{isCheckedIn ? "Check Out" : "Check In"}</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
+            <Text style={{ fontSize: 20, color: "#764ba2" }}>{total_leave ? total_leave : 0}</Text>
+            <Text style={styles.menuText}>Total Leaves</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.singleCard}
+          // onPress={() => router.push("/field-visits")}
+          >
+            <Text style={{ fontSize: 20, color: "#764ba2" }}>{total_visit ? total_visit : 0}</Text>
+            <Text style={styles.menuText}>Total Visit</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Menu List */}
+        <FlatList
+          scrollEnabled={false}
+          data={menuItems}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.menuCard}
+              onPress={() => router.push(item.route as any)}
+            >
+              <Feather name={item.icon as any} size={20} color="#764ba2" />
+              <Text style={styles.menuText}>{item.title}</Text>
+              <Feather
+                name="chevron-right"
+                size={20}
+                color="#999"
+                style={{ marginLeft: "auto" }}
+              />
+            </TouchableOpacity>
+          )}
+        />
+        {loading ? (
+          <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
+        ) : (
+          <>
+            {/* Check In / Out Buttons */}
+            <View style={styles.TimeContainer}><Text style={{ fontSize: 16, fontWeight: 500 }}>{LastPunchIn ? 'Login time:' + LastPunchIn : ''}</Text></View>
+            <View style={styles.checkContainer}>
+              <TouchableOpacity onPress={handleCheckInOut} style={{ flex: 1, marginRight: 8 }}>
+                <LinearGradient
+                  colors={[checkBtnColor1, checkBtnColor2]}
+                  style={styles.checkButton}
+                >
+                  <Feather name="clock" size={20} color="#fff" />
+                  <Text style={styles.checkText}>{isCheckedIn ? "Check Out" : "Check In"}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -240,6 +253,7 @@ const styles = StyleSheet.create({
     margin: 20,
   },
   TimeContainer: {
+    marginTop: 50,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
@@ -258,7 +272,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 8,
   },
-  Card:{
+  Card: {
     flexDirection: "row",
     justifyContent: "space-around",
   },

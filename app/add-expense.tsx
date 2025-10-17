@@ -9,6 +9,8 @@ import React, { useState } from "react";
 import {
   Alert,
   Image,
+  KeyboardAvoidingView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -32,7 +34,7 @@ const AddExpenseScreen = () => {
 
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: mediaType,
-      allowsEditing: true,
+      allowsEditing: false,
       quality: 0.7,
     });
 
@@ -101,18 +103,16 @@ const AddExpenseScreen = () => {
       Alert.alert("Validation Error", "Please fill all required fields.");
       return;
     }
-
     let receiptUrl = null;
     if (receipt) {
       receiptUrl = await uploadToCloudinary(receipt);
-      if (!receiptUrl) return; // stop if upload failed
     }
     const token=await AsyncStorage.getItem('token');
     const payload={
       category:category,
       amount:amount,
       description:description,
-      receipt: receiptUrl || "",
+      receipt: receiptUrl?receiptUrl:"no image",
     }
     console.log("Submitting expense:", payload);
     // handle API call here
@@ -138,63 +138,70 @@ const AddExpenseScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <KeyboardAvoidingView
+              behavior={"height"}
+              style={{ flex: 1 }}
+              keyboardVerticalOffset={0} // adjust if you have a header
+            >
+        <ScrollView>
+          <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
         <Feather name="arrow-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Expense</Text>
         <View style={{ width: 24 }} />
        </View>
+          {/* Category Dropdown */}
+            <Text style={[styles.label,{marginTop:15}]}>Category</Text>
+            <View style={styles.pickerBox}>
+              <Picker
+                selectedValue={category}
+                onValueChange={(itemValue) => setCategory(itemValue)}
+              >
+                <Picker.Item label="Select category" value="" />
+                <Picker.Item label="Travel" value="travel" />
+                <Picker.Item label="Food" value="food" />
+                <Picker.Item label="Supplies" value="supplies" />
+              </Picker>
+            </View>
 
-      {/* Category Dropdown */}
-      <Text style={[styles.label,{marginTop:15}]}>Category</Text>
-      <View style={styles.pickerBox}>
-        <Picker
-          selectedValue={category}
-          onValueChange={(itemValue) => setCategory(itemValue)}
-        >
-          <Picker.Item label="Select category" value="" />
-          <Picker.Item label="Travel" value="travel" />
-          <Picker.Item label="Food" value="food" />
-          <Picker.Item label="Supplies" value="supplies" />
-        </Picker>
-      </View>
+            {/* Amount */}
+            <Text style={styles.label}>Amount</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="0.00"
+              keyboardType="numeric"
+              value={amount}
+              onChangeText={setAmount}
+            />
 
-      {/* Amount */}
-      <Text style={styles.label}>Amount</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="0.00"
-        keyboardType="numeric"
-        value={amount}
-        onChangeText={setAmount}
-      />
+            {/* Description */}
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Enter description"
+              multiline
+              numberOfLines={3}
+              value={description}
+              onChangeText={setDescription}
+            />
 
-      {/* Description */}
-      <Text style={styles.label}>Description</Text>
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        placeholder="Enter description"
-        multiline
-        numberOfLines={3}
-        value={description}
-        onChangeText={setDescription}
-      />
+            {/* Receipt */}
+            <Text style={styles.label}>Receipt (optional)</Text>
+            <TouchableOpacity style={styles.uploadBox} onPress={handleReceiptUpload}>
+              {receipt ? (
+                <Image source={{ uri: receipt }} style={styles.receiptImage} />
+              ) : (
+                <Text style={styles.uploadText}>📷 Take Photo or Upload</Text>
+              )}
+            </TouchableOpacity>
 
-      {/* Receipt */}
-      <Text style={styles.label}>Receipt (optional)</Text>
-      <TouchableOpacity style={styles.uploadBox} onPress={handleReceiptUpload}>
-        {receipt ? (
-          <Image source={{ uri: receipt }} style={styles.receiptImage} />
-        ) : (
-          <Text style={styles.uploadText}>📷 Take Photo or Upload</Text>
-        )}
-      </TouchableOpacity>
-
-      {/* Submit Button */}
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={uploading}>
-        <Text style={styles.submitText}>{uploading ? "Uploading..." : "Submit Expense"}</Text>
-      </TouchableOpacity>
+            {/* Submit Button */}
+            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={uploading}>
+              <Text style={styles.submitText}>{uploading ? "Uploading..." : "Submit Expense"}</Text>
+            </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

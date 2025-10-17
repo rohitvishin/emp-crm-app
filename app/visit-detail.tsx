@@ -44,6 +44,8 @@ export default function VisitDetailScreen() {
         }
         if(data.visit.check_in_time){
           setIsCheckedIn(true)
+        }else if(!data.visit.check_in_time){
+          startLocationTracking(); // when visit is started but not reached location, start location tracking
         }
         if(data.visit.check_out_time){
           setIsCheckedOut(true)
