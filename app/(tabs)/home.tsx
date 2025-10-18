@@ -1,9 +1,12 @@
 import { BASE_URL } from "@/src/config";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from "@react-navigation/native";
+import * as IntentLauncher from "expo-intent-launcher";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -37,15 +40,47 @@ export default function HomeScreen() {
     { id: "2", title: "Expenses", icon: "file-text", route: "/list-expense" },
     { id: "3", title: "Leave Requests", icon: "calendar", route: "/list-leave" },
   ];
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchDashboardData(); // Runs every time user visits the screen
+    }, [])
+  );
+  const openAppSettings = async () => {
+    try {
+       await IntentLauncher.startActivityAsync(
+        IntentLauncher.ActivityAction.APPLICATION_DETAILS_SETTINGS,
+      );
+    } catch (error) {
+      console.error("Failed to open settings:", error);
+      Alert.alert("Error", "Unable to open settings. Please open it manually.");
+    }
+  };
+
+  const checkPermissions = async () => {
+  const { status } = await Location.getForegroundPermissionsAsync();
+
+  if (status !== "granted") {
+    Alert.alert(
+      "Permission Required",
+      "Location permission is needed to fetch dashboard data.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Open Settings", onPress: openAppSettings },
+      ]
+    );
+    return false;
+  }
+
+  return true;
+};
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchDashboardData();
     setRefreshing(false);
   };
   const fetchDashboardData = async () => {
+    const allowed = await checkPermissions();
+    if (!allowed) return;
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem("token");

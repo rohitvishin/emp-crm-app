@@ -35,7 +35,8 @@ const AddLeaveScreen = () => {
       }
   }, [leaveId]);
   const fetchLeaveDetails = async (id: string) => {
-      try {
+    console.log(id);  
+    try {
         const token=await AsyncStorage.getItem('token');
         const response = await fetch(`${BASE_URL}/get-leaves`, {
           method: "POST",
@@ -63,7 +64,40 @@ const AddLeaveScreen = () => {
         console.error("Error fetching leave details:", error);
       }
   };
-
+  const deleteLeave = async (id: string) => {
+    Alert.alert(
+      "Confirm Delete",
+      "Are you sure you want to delete this leave request?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: async () => {
+            try {
+              const token=await AsyncStorage.getItem('token');
+              const response = await fetch(`${BASE_URL}/delete-leaves`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ id: id }),
+              });
+              const json = await response.json();
+              if (json.status) {
+                Alert.alert("Success", "Leave request deleted.", [
+                  { text: "OK", onPress: () => router.replace("/(tabs)/home") },
+                ]);
+              } else {
+                Alert.alert("Error", json.message || "Failed to delete leave.");
+              }
+            } catch (error) {
+              console.error("Error deleting leave:", error);
+              Alert.alert("Error", "An error occurred while deleting the leave.");
+            }
+          } 
+        },
+      ]
+    );
+  }
   const handleSubmit = async () => {
     setUploading(true);
     const leave_from=fromDate
@@ -112,7 +146,13 @@ const AddLeaveScreen = () => {
         <Feather name="arrow-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{leaveId?'Edit Leave':'Add Leave'}</Text>
-        <View style={{ width: 24 }} />
+        {leaveId ? (
+          <TouchableOpacity onPress={() => deleteLeave(leaveId)}>
+            <Feather name="trash-2" size={24} color="red" />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 24 }} /> // Placeholder for alignment
+        )}
     </View>
 
       {/* Leave Dropdown */}

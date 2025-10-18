@@ -8,6 +8,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
@@ -33,6 +34,7 @@ const AddExpenseScreen = () => {
   const expenseId = useSelector((state: RootState) => state.ids.expenseId);
   const [visible, setIsVisible] = useState<boolean>(false);
   const [newFile, setNewFile] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (expenseId) {
@@ -42,6 +44,7 @@ const AddExpenseScreen = () => {
   }, [expenseId]);
 
   const fetchExpenseDetails = async (id: string) => {
+    setLoading(true);
     try {
       const token=await AsyncStorage.getItem('token');
       const response = await fetch(`${BASE_URL}/get-expense`, {
@@ -63,11 +66,49 @@ const AddExpenseScreen = () => {
         if (expense.receipt) {
           setReceipt(expense.receipt);
         }
+        setLoading(false);
       }
     } catch (err) {
       console.error("Error fetching expense details:", err);
     }
   };
+  const deleteExpense = async (id: string) => {
+    Alert.alert(
+      "Confirm Delete",
+      "Are you sure you want to delete this expense?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const token=await AsyncStorage.getItem('token');
+              const response = await fetch(`${BASE_URL}/delete-expense`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ id: id }),
+              });
+              const json = await response.json();
+              if (json.status) {
+                Alert.alert("Success", "Expense deleted successfully!", [
+                  { text: "OK", onPress: () => router.push("/list-expense") },
+                ]);
+              } else {
+                Alert.alert("Error", json.message || "Failed to delete expense.");
+              }
+            } catch (err) {
+              console.error("Error deleting expense:", err);
+              Alert.alert("Error", "An error occurred while deleting the expense.");
+            }
+          },
+        },
+      ]
+    );
+  }
   const handleReceiptUpload = async () => {
     const mediaType =
     (ImagePicker as any).MediaType?.Image || ImagePicker.MediaTypeOptions.Images;
@@ -189,14 +230,25 @@ const AddExpenseScreen = () => {
               keyboardVerticalOffset={0} // adjust if you have a header
             >
         <ScrollView>
-          <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-        <Feather name="arrow-left" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{expenseId?'Edit Expense':'Add Expense'}</Text>
-        <View style={{ width: 24 }} />
-       </View>
-          {/* Category Dropdown */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()}>
+                  <Feather name="arrow-left" size={24} color="#000" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>{expenseId?'Edit Expense':'Add Expense'}</Text>
+                {
+                  expenseId? 
+                  <TouchableOpacity onPress={() => deleteExpense(expenseId)} disabled={!expenseId}>
+                    <Feather name="trash-2" size={24} color="red" />
+                  </TouchableOpacity>
+                  :<View style={{width:24}}></View>
+                }
+          </View>
+          {
+            loading ? (
+              <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
+            ) : 
+            <>
+            {/* Category Dropdown */}
             <Text style={[styles.label,{marginTop:15}]}>Category</Text>
             <View style={styles.pickerBox}>
               <Picker
@@ -261,6 +313,10 @@ const AddExpenseScreen = () => {
             <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={uploading}>
               <Text style={styles.submitText}>{uploading ? "Uploading..." : (expenseId?'Update Expense':'Submit Expense')}</Text>
             </TouchableOpacity>
+            </>
+          }
+          
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
