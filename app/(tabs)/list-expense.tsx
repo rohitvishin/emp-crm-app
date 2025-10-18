@@ -1,10 +1,12 @@
 import { BASE_URL } from "@/src/config";
+import { setExpenseId } from "@/src/idSlice";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDispatch } from "react-redux";
 
 type Expense = {
   id: string;
@@ -16,6 +18,7 @@ type Expense = {
 };
 
 export default function ListExpense() {
+  const dispatch = useDispatch();
   const router = useRouter();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +72,10 @@ export default function ListExpense() {
           <Feather name="arrow-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Expense List</Text>
-        <TouchableOpacity onPress={() => router.push("/add-expense")}>
+        <TouchableOpacity onPress={() => {
+          dispatch(setExpenseId(null));
+          router.push("/add-expense");
+        }}>
           <Feather name="plus" size={24} color="#000" />
         </TouchableOpacity>
       </View>
@@ -99,7 +105,10 @@ export default function ListExpense() {
           data={expenses}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <TouchableOpacity style={styles.card}>
+            <TouchableOpacity style={styles.card} onPress={()=>{
+              dispatch(setExpenseId(item.id));
+              router.push("/add-expense");
+            }}>
               <View style={styles.cardRow}>
                 <Text style={styles.cardTitle}>{item.category}</Text>
                 <View style={[styles.statusBadge, item.status === "rejected" ? styles.rejected : styles.completed]}>

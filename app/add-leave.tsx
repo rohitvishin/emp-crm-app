@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Platform,
@@ -15,6 +15,7 @@ import {
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSelector } from "react-redux";
 
 const AddLeaveScreen = () => {
     const router = useRouter();
@@ -24,9 +25,47 @@ const AddLeaveScreen = () => {
     const [toDate, setToDate] = useState<Date | null>(null);
     const [category, setCategory] = useState("");
     const [description, setDescription] = useState("");
-    
+    const [uploading, setUploading] = useState(false);
+    const leaveId = useSelector((state: RootState) => state.ids.leaveId);
+
+  useEffect(() => {
+      if (leaveId) {
+        // Fetch existing expense details and populate fields for editing
+        fetchLeaveDetails(leaveId);
+      }
+  }, [leaveId]);
+  const fetchLeaveDetails = async (id: string) => {
+      try {
+        const token=await AsyncStorage.getItem('token');
+        const response = await fetch(`${BASE_URL}/get-leaves`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id: id }),
+        });
+  
+        const json = await response.json();
+        if (json.status && json.data) {
+          const leave = json.data;
+          console.log("Fetched leave details:", leave);
+          setCategory(leave.leave_type);
+          setDescription(leave.reason);
+          if (leave.leave_from) {
+            setFromDate(new Date(leave.leave_from));
+          }
+          if (leave.leave_to) {
+            setToDate(new Date(leave.leave_to));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching leave details:", error);
+      }
+  };
 
   const handleSubmit = async () => {
+    setUploading(true);
     const leave_from=fromDate
           ? new Date(fromDate).toISOString().split("T")[0]
           : null;
@@ -37,6 +76,7 @@ const AddLeaveScreen = () => {
     // handle API call here
     const token=await AsyncStorage.getItem('token');
     const payload={
+      id:leaveId?leaveId:null,
       leave_type:category,
       reason:description,
       leave_from:leave_from,
@@ -54,10 +94,12 @@ const AddLeaveScreen = () => {
     });
     const data = await response.json();
     if (response.ok) {
+      setUploading(false);
       Alert.alert("Success", "Leave request added!", [
         { text: "OK", onPress: () => router.replace("/(tabs)/home") },
       ]);
     } else {
+      setUploading(false);
       Alert.alert("Error", data.message || "Failed to add leave.");
     }
   };
@@ -69,7 +111,7 @@ const AddLeaveScreen = () => {
         <TouchableOpacity onPress={() => router.back()}>
         <Feather name="arrow-left" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Leave</Text>
+        <Text style={styles.headerTitle}>{leaveId?'Edit Leave':'Add Leave'}</Text>
         <View style={{ width: 24 }} />
     </View>
 
@@ -138,7 +180,7 @@ const AddLeaveScreen = () => {
       />
       {/* Submit Button */}
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitText}>Submit Leave</Text>
+        <Text style={styles.submitText}>{uploading ? "Uploading..." : (leaveId?'Update Leave':'Submit Leave')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

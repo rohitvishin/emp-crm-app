@@ -1,4 +1,5 @@
 import { BASE_URL } from "@/src/config";
+import { setLeaveId } from "@/src/idSlice";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -16,7 +17,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import { useDispatch } from "react-redux";
 
 // Define type for a Leave item
 type Leave = {
@@ -32,6 +33,7 @@ export default function ListLeaves() {
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     fetchLeaves();
@@ -91,6 +93,10 @@ export default function ListLeaves() {
   const renderItem: ListRenderItem<Leave> = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
+      onPress={()=>{
+        dispatch(setLeaveId(item.id));
+        router.push("/add-leave");
+      }}
     >
       <View style={styles.cardRow}>
         <Text style={styles.cardTitle}>{item.title}</Text>
@@ -116,7 +122,10 @@ export default function ListLeaves() {
           <Feather name="arrow-left" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Leaves List</Text>
-        <TouchableOpacity onPress={() => router.push("/add-leave")}>
+        <TouchableOpacity onPress={() =>{
+          dispatch(setLeaveId(null));
+          router.push("/add-leave");
+        }}>
           <Feather name="plus" size={24} color="#000" />
         </TouchableOpacity>
       </View>

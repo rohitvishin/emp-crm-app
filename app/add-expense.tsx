@@ -1,11 +1,12 @@
 import { BASE_URL } from "@/src/config";
-import { Feather } from "@expo/vector-icons";
+import { RootState } from "@/src/index";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -17,7 +18,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import ImageView from "react-native-image-viewing";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSelector } from "react-redux";
 import { CLOUD_NAME, UPLOAD_PRESET } from "../src/config";
 
 const AddExpenseScreen = () => {
@@ -27,7 +30,44 @@ const AddExpenseScreen = () => {
   const [description, setDescription] = useState("");
   const [uploading, setUploading] = useState(false);
   const [receipt, setReceipt] = useState<any>(null);
- 
+  const expenseId = useSelector((state: RootState) => state.ids.expenseId);
+  const [visible, setIsVisible] = useState<boolean>(false);
+  const [newFile, setNewFile] = useState(false);
+
+  useEffect(() => {
+    if (expenseId) {
+      // Fetch existing expense details and populate fields for editing
+      fetchExpenseDetails(expenseId);
+    }
+  }, [expenseId]);
+
+  const fetchExpenseDetails = async (id: string) => {
+    try {
+      const token=await AsyncStorage.getItem('token');
+      const response = await fetch(`${BASE_URL}/get-expense`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: id }),
+      });
+
+      const json = await response.json();
+      if (json.status && json.data) {
+        const expense = json.data;
+        console.log("Fetched expense details:", expense);
+        setCategory(expense.category);
+        setAmount(expense.amount.toString());
+        setDescription(expense.description);
+        if (expense.receipt) {
+          setReceipt(expense.receipt);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching expense details:", err);
+    }
+  };
   const handleReceiptUpload = async () => {
     const mediaType =
     (ImagePicker as any).MediaType?.Image || ImagePicker.MediaTypeOptions.Images;
@@ -47,6 +87,7 @@ const AddExpenseScreen = () => {
         { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
       );
       setReceipt(manipulated.uri);
+      setNewFile(true);
     }
   };
 
@@ -104,11 +145,15 @@ const AddExpenseScreen = () => {
       return;
     }
     let receiptUrl = null;
-    if (receipt) {
+    if (receipt && newFile) {
       receiptUrl = await uploadToCloudinary(receipt);
+      if (!receiptUrl) return; // stop if upload failed
+    }else if (!newFile && expenseId) {
+      receiptUrl = receipt; // retain existing URL if not changed
     }
     const token=await AsyncStorage.getItem('token');
     const payload={
+      id:expenseId?expenseId:null,
       category:category,
       amount:amount,
       description:description,
@@ -148,7 +193,7 @@ const AddExpenseScreen = () => {
         <TouchableOpacity onPress={() => router.back()}>
         <Feather name="arrow-left" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Expense</Text>
+        <Text style={styles.headerTitle}>{expenseId?'Edit Expense':'Add Expense'}</Text>
         <View style={{ width: 24 }} />
        </View>
           {/* Category Dropdown */}
@@ -188,17 +233,33 @@ const AddExpenseScreen = () => {
 
             {/* Receipt */}
             <Text style={styles.label}>Receipt (optional)</Text>
-            <TouchableOpacity style={styles.uploadBox} onPress={handleReceiptUpload}>
-              {receipt ? (
-                <Image source={{ uri: receipt }} style={styles.receiptImage} />
-              ) : (
-                <Text style={styles.uploadText}>📷 Take Photo or Upload</Text>
-              )}
-            </TouchableOpacity>
-
+            <View style={styles.profileSection}>
+            <View style={styles.profileImageWrapper}>
+              {
+                  visible ? (
+                    <ImageView
+                      images={[{ uri: receipt }]}
+                      imageIndex={0}
+                      onRequestClose={() => setIsVisible(false)}
+                      visible={visible}
+                      backgroundColor="black"
+                    />
+                  ) : <TouchableOpacity onPress={() => { setIsVisible(true) }}>
+                    <Image
+                      source={{ uri: receipt }}
+                      style={styles.profileImage}
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>                  
+                }
+                <TouchableOpacity onPress={handleReceiptUpload} style={styles.cameraIcon}>
+                  <Ionicons name="camera" size={16} color="#ffffffff" />
+                </TouchableOpacity>
+            </View>
+            </View>
             {/* Submit Button */}
             <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={uploading}>
-              <Text style={styles.submitText}>{uploading ? "Uploading..." : "Submit Expense"}</Text>
+              <Text style={styles.submitText}>{uploading ? "Uploading..." : (expenseId?'Update Expense':'Submit Expense')}</Text>
             </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -266,5 +327,26 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  profileImage: {
+    width: 150,
+    height: 80,
+    backgroundColor: "#f0f0f0",
+  },
+  cameraIcon: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#333",
+    borderRadius: 20,
+    padding: 6,
+  },
+  profileSection: {
+    alignItems: "center",
+    marginVertical: 20,
+  },
+  profileImageWrapper: {
+    position: "relative",
+
   },
 });

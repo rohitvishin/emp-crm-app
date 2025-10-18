@@ -1,9 +1,11 @@
+import idReducer from "@/src/idSlice";
 import visitReducer from "@/src/visitSlice";
 import { configureStore } from "@reduxjs/toolkit";
 
 export const store = configureStore({
   reducer: {
     visit: visitReducer,
+    ids: idReducer,
   },
 });
 
