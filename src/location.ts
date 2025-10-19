@@ -18,6 +18,7 @@ export async function ensureBackgroundTracking(){
           foregroundService: {
             notificationTitle: "Tracking Location",
             notificationBody: "Updating your location in the background",
+            notificationColor: "#764ba2"
           },
           mayShowUserSettingsDialog: true,
       });
@@ -74,7 +75,8 @@ export async function startLocationTracking() {
       pausesUpdatesAutomatically: false,
       foregroundService: {
         notificationTitle: "Tracking Location",
-        notificationBody: "Updating your location in the background",
+        notificationBody: "Updating your location in background",
+        notificationColor: "#764ba2"
       },
       mayShowUserSettingsDialog: true,
     });
