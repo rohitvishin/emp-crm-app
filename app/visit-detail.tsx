@@ -1,6 +1,6 @@
 import { RootState } from "@/src";
 import { BASE_URL } from "@/src/config";
-import { startLocationTracking, stopLocationTracking } from "@/src/location";
+import { ensureBackgroundTracking, startLocationTracking, stopLocationTracking } from "@/src/location";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -22,6 +22,7 @@ export default function VisitDetailScreen() {
   });
 
   const updateVisit=async (visit:any)=>{
+    console.log(visit.meeting_latitude);
     setVisitId(visit.id);
     try {
       const token = await AsyncStorage.getItem("token");
@@ -36,16 +37,18 @@ export default function VisitDetailScreen() {
 
       const data = await response.json();
       if (response.ok && data.visit) {
+        console.log("Visit detail data:", data.visit);
         if(data.other_active_visit == false){
           setShowButton(true);
         }
         if(data.visit.started_visit_at){
           setIsStarted(true)
+          if(!data.visit.check_in_time){
+            ensureBackgroundTracking(); // when visit is started but not reached location, start location tracking
+          }
         }
         if(data.visit.check_in_time){
           setIsCheckedIn(true)
-        }else if(!data.visit.check_in_time){
-          startLocationTracking(); // when visit is started but not reached location, start location tracking
         }
         if(data.visit.check_out_time){
           setIsCheckedOut(true)
@@ -87,11 +90,13 @@ export default function VisitDetailScreen() {
                     if (!isStarted) {
                       setIsStarted(true);
                       actionType = "start_visit";
+                      await AsyncStorage.setItem('visitId',String(visitId));
                       startLocationTracking();
                     } else if (isStarted && !isCheckIn) {
                       setIsCheckedIn(true);
                       actionType = "reached_at";
-                       stopLocationTracking();
+                      stopLocationTracking();
+                      await AsyncStorage.removeItem('visitId');
                     } else if (isStarted && isCheckIn && !isCheckOut) {
                       setIsCheckedOut(true);
                       actionType = "meeting_end";

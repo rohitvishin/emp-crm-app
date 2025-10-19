@@ -4,33 +4,47 @@ import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, RefreshControl, ScrollView, SectionList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  RefreshControl,
+  ScrollView,
+  SectionList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
 
 export default function FieldVisits() {
   const router = useRouter();
   const dispatch = useDispatch();
+
   const [sections, setSections] = useState<any[]>([]);
+  const [upcomingSections, setUpcomingSections] = useState<any[]>([]);
+  const [pastSections, setPastSections] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
 
   useEffect(() => {
     fetchVisits();
   }, []);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchVisits();
     setRefreshing(false);
   };
+
   const fetchVisits = async () => {
     try {
+      setLoading(true);
       const token = await AsyncStorage.getItem("token");
-      if (!token) {
-        console.log("No token found");
-        return;
-      }
+      if (!token) return;
 
       const response = await fetch(`${BASE_URL}/visits`, {
         method: "GET",
@@ -40,26 +54,26 @@ export default function FieldVisits() {
       });
 
       const data = await response.json();
+      console.log("Fetched visits data:", data);
       if (response.ok && data.visits) {
-        // Transform API data to match UI structure
         const visits = data.visits.map((v: any) => ({
           id: String(v.id),
-          customer: v.customer.name || "No name",
+          customer: v.customer?.name || "No name",
           purpose: v.purpose || "No Purpose",
           notes: v.notes || "No Notes",
           visit_start_time: v.meeting_scheduled_from,
-          started_visit_at: v.started_visit_at ? v.started_visit_at : null,
-          check_in_time: v.check_in_time ? v.check_in_time : null,
-          check_out_time: v.check_out_time ? v.check_out_time : null,
-          location: v.meetup_address ? v.meetup_address : null,
-          meeting_latitude: v.meeting_latitude ? v.meeting_latitude : null,
-          meeting_longitude: v.meeting_longitude ? v.meeting_longitude : null,
+          started_visit_at: v.started_visit_at || null,
+          check_in_time: v.check_in_time || null,
+          check_out_time: v.check_out_time || null,
+          location: v.meetup_address || null,
           date: v.visit_date,
           status: v.outcome,
-          groupDate: v.visit_date, // group by date
+          groupDate: v.visit_date,
+          meeting_latitude: v.meeting_latitude,
+          meeting_longitude: v.meeting_longitude,
         }));
 
-        // Group visits by groupDate for SectionList
+        // Group visits by date for SectionList
         const grouped = Object.values(
           visits.reduce((acc: any, visit: any) => {
             if (!acc[visit.groupDate]) {
@@ -70,16 +84,28 @@ export default function FieldVisits() {
           }, {})
         );
 
+        grouped.sort((a: any, b: any) => {
+          return new Date(b.title).getTime() - new Date(a.title).getTime();
+        });
+
+        // Separate upcoming & past visits
+        const today = new Date().toISOString().split("T")[0];
+        const upcoming = grouped.filter((g: any) => g.title >= today);
+        const past = grouped.filter((g: any) => g.title < today);
+
+        setUpcomingSections(upcoming);
+        setPastSections(past);
         setSections(grouped);
-      } else {
-        console.error("Error fetching visits:", data);
       }
     } catch (error) {
       console.error("Fetch visits error:", error);
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const currentSections = activeTab === "upcoming" ? upcomingSections : pastSections;
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -87,29 +113,61 @@ export default function FieldVisits() {
         <TouchableOpacity onPress={() => router.back()}>
           <Feather name="arrow-left" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Visit List</Text>
-        <View></View>
+        <Text style={styles.headerTitle}>Visits</Text>
+        <View />
       </View>
 
+      {/* Tabs */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "upcoming" && styles.activeTab]}
+          onPress={() => setActiveTab("upcoming")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "upcoming" && styles.activeTabText,
+            ]}
+          >
+            Upcoming
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "past" && styles.activeTab]}
+          onPress={() => setActiveTab("past")}
+        >
+          <Text
+            style={[styles.tabText, activeTab === "past" && styles.activeTabText]}
+          >
+            Past
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* List */}
       {loading ? (
         <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
-      ) : sections.length === 0 || sections.every((s) => s.data.length === 0) ? (
-        // 👇 No data image
+      ) : currentSections.length === 0 ||
+        currentSections.every((s) => s.data.length === 0) ? (
         <ScrollView
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
-        <View style={{ alignItems: "center", marginTop: 80 }}>
-          <Image
-            source={require("../../assets/images/no-data.png")}
-            style={{ width: 150, height: 150, resizeMode: "contain" }}
-          />
-        </View>
+          <View style={{ alignItems: "center", marginTop: 80 }}>
+            <Image
+              source={require("../../assets/images/no-data.png")}
+              style={{ width: 150, height: 150, resizeMode: "contain" }}
+            />
+            <Text style={{ color: "#666", marginTop: 10 }}>
+              No {activeTab} visits found
+            </Text>
+          </View>
         </ScrollView>
       ) : (
         <SectionList
-          sections={sections}
+          sections={currentSections}
           keyExtractor={(item) => item.id}
           renderSectionHeader={({ section: { title } }) => (
             <Text style={styles.sectionHeader}>{title}</Text>
@@ -127,7 +185,7 @@ export default function FieldVisits() {
                 <View
                   style={[
                     styles.statusBadge,
-                    item.check_out_time !== ""
+                    item.check_out_time
                       ? styles.completed
                       : styles.scheduled,
                   ]}
@@ -148,16 +206,53 @@ export default function FieldVisits() {
             </TouchableOpacity>
           )}
           refreshing={refreshing}
-          onRefresh={onRefresh} // 👈 pull-to-refresh built-in
+          onRefresh={onRefresh}
           contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
     </SafeAreaView>
-
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#fff" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  headerTitle: { fontSize: 18, fontWeight: "600" },
+
+  tabContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    backgroundColor: "#f2f2f2",
+    marginHorizontal: 16,
+    marginTop: 10,
+    borderRadius: 8,
+    padding: 4,
+  },
+  tab: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  activeTab: {
+    backgroundColor: "#353535ff",
+  },
+  tabText: {
+    fontSize: 14,
+    color: "#444",
+    fontWeight: "500",
+  },
+  activeTabText: {
+    color: "#fff",
+  },
+
   sectionHeader: {
     fontSize: 16,
     fontWeight: "600",
@@ -166,10 +261,14 @@ const styles = StyleSheet.create({
     marginTop: 10,
     backgroundColor: "#f9f9f9",
   },
-  container: { flex: 1, backgroundColor: "#fff" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: "#eee" },
-  headerTitle: { fontSize: 18, fontWeight: "600" },
-  card: { backgroundColor: "#f9f9f9", marginHorizontal: 16, marginTop: 12, borderRadius: 10, padding: 16, position: "relative" },
+  card: {
+    backgroundColor: "#f9f9f9",
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 10,
+    padding: 16,
+    position: "relative",
+  },
   cardRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   cardTitle: { fontSize: 16, fontWeight: "600", marginBottom: 6 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },

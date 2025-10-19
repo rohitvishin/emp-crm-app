@@ -2,6 +2,32 @@ import * as Location from "expo-location";
 import { Alert } from "react-native";
 import { LOCATION_TASK_NAME } from "../background/locationTask";
 
+export async function ensureBackgroundTracking(){
+  try {
+    // Check if location updates are already running
+    const isRegistered = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
+
+    if (!isRegistered) {
+      console.log("📍 Restarting background tracking...");
+      await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+          accuracy: Location.Accuracy.Low,
+          timeInterval: 60000, // 1 minute
+          distanceInterval: 50, // 50 m
+          pausesUpdatesAutomatically: false,
+          foregroundService: {
+            notificationTitle: "Tracking Location",
+            notificationBody: "Updating your location in the background",
+          },
+          mayShowUserSettingsDialog: true,
+      });
+      console.log("✅ Background tracking resumed");
+    } else {
+      console.log("📍 Background tracking already active");
+    }
+  } catch (error) {
+    console.error("⚠️ Error ensuring background tracking:", error);
+  }
+};
 export async function startLocationTracking() {
   try {
     // 1️⃣ Make sure permissions are granted
@@ -30,8 +56,8 @@ export async function startLocationTracking() {
     // 3️⃣ Start updates
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
       accuracy: Location.Accuracy.Low,
-      timeInterval: 120000, // 1 minute
-      distanceInterval: 100, // 50 m
+      timeInterval: 60000, // 1 minute
+      distanceInterval: 50, // 50 m
       pausesUpdatesAutomatically: false,
       foregroundService: {
         notificationTitle: "Tracking Location",
