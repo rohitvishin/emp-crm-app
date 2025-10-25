@@ -1,10 +1,12 @@
+import { BASE_URL } from "@/src/config";
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
-import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Platform,
   StyleSheet,
   Text,
@@ -13,6 +15,7 @@ import {
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSelector } from "react-redux";
 
 const AddLeaveScreen = () => {
     const router = useRouter();
@@ -21,30 +24,118 @@ const AddLeaveScreen = () => {
     const [fromDate, setFromDate] = useState<Date | null>(null);
     const [toDate, setToDate] = useState<Date | null>(null);
     const [category, setCategory] = useState("");
-    const [amount, setAmount] = useState("");
     const [description, setDescription] = useState("");
-    const [receipt, setReceipt] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const leaveId = useSelector((state: RootState) => state.ids.leaveId);
 
-  const handleReceiptUpload = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.7,
-    });
-
-    if (!result.canceled) {
-    //   setReceipt(result.assets[0].uri);
-    }
+  useEffect(() => {
+      if (leaveId) {
+        // Fetch existing expense details and populate fields for editing
+        fetchLeaveDetails(leaveId);
+      }
+  }, [leaveId]);
+  const fetchLeaveDetails = async (id: string) => {
+    console.log(id);  
+    try {
+        const token=await AsyncStorage.getItem('token');
+        const response = await fetch(`${BASE_URL}/get-leaves`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id: id }),
+        });
+  
+        const json = await response.json();
+        if (json.status && json.data) {
+          const leave = json.data;
+          console.log("Fetched leave details:", leave);
+          setCategory(leave.leave_type);
+          setDescription(leave.reason);
+          if (leave.leave_from) {
+            setFromDate(new Date(leave.leave_from));
+          }
+          if (leave.leave_to) {
+            setToDate(new Date(leave.leave_to));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching leave details:", error);
+      }
   };
-
-  const handleSubmit = () => {
-    console.log({
-      category,
-      amount,
-      description,
-      receipt,
-    });
+  const deleteLeave = async (id: string) => {
+    Alert.alert(
+      "Confirm Delete",
+      "Are you sure you want to delete this leave request?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: async () => {
+            try {
+              const token=await AsyncStorage.getItem('token');
+              const response = await fetch(`${BASE_URL}/delete-leaves`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ id: id }),
+              });
+              const json = await response.json();
+              if (json.status) {
+                Alert.alert("Success", "Leave request deleted.", [
+                  { text: "OK", onPress: () => router.replace("/(tabs)/home") },
+                ]);
+              } else {
+                Alert.alert("Error", json.message || "Failed to delete leave.");
+              }
+            } catch (error) {
+              console.error("Error deleting leave:", error);
+              Alert.alert("Error", "An error occurred while deleting the leave.");
+            }
+          } 
+        },
+      ]
+    );
+  }
+  const handleSubmit = async () => {
+    setUploading(true);
+    const leave_from=fromDate
+          ? new Date(fromDate).toISOString().split("T")[0]
+          : null;
+    const leave_to=toDate
+          ? new Date(toDate).toISOString().split("T")[0]
+          : null;
+   
     // handle API call here
+    const token=await AsyncStorage.getItem('token');
+    const payload={
+      id:leaveId?leaveId:null,
+      leave_type:category,
+      reason:description,
+      leave_from:leave_from,
+      leave_to:leave_to,
+    }
+    console.log(payload);
+    // handle API call here
+    const response=await fetch(`${BASE_URL}/add-leaves`,{
+        method:'POST',
+        headers:{
+          "Content-Type":"application/json",
+          Authorization:`Bearer ${token}`,
+        },
+        body:JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (response.ok) {
+      setUploading(false);
+      Alert.alert("Success", "Leave request added!", [
+        { text: "OK", onPress: () => router.replace("/(tabs)/home") },
+      ]);
+    } else {
+      setUploading(false);
+      Alert.alert("Error", data.message || "Failed to add leave.");
+    }
   };
 
   return (
@@ -54,8 +145,14 @@ const AddLeaveScreen = () => {
         <TouchableOpacity onPress={() => router.back()}>
         <Feather name="arrow-left" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Leave</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.headerTitle}>{leaveId?'Edit Leave':'Add Leave'}</Text>
+        {leaveId ? (
+          <TouchableOpacity onPress={() => deleteLeave(leaveId)}>
+            <Feather name="trash-2" size={24} color="red" />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 24 }} /> // Placeholder for alignment
+        )}
     </View>
 
       {/* Leave Dropdown */}
@@ -123,7 +220,7 @@ const AddLeaveScreen = () => {
       />
       {/* Submit Button */}
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitText}>Submit Leave</Text>
+        <Text style={styles.submitText}>{uploading ? "Uploading..." : (leaveId?'Update Leave':'Submit Leave')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

@@ -1,107 +1,324 @@
-import { Feather } from "@expo/vector-icons";
+import { BASE_URL } from "@/src/config";
+import { RootState } from "@/src/index";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Image,
+  KeyboardAvoidingView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import ImageView from "react-native-image-viewing";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSelector } from "react-redux";
+import { CLOUD_NAME, UPLOAD_PRESET } from "../src/config";
 
 const AddExpenseScreen = () => {
-    const router = useRouter();
+  const router = useRouter();
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [receipt, setReceipt] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [receipt, setReceipt] = useState<any>(null);
+  const expenseId = useSelector((state: RootState) => state.ids.expenseId);
+  const [visible, setIsVisible] = useState<boolean>(false);
+  const [newFile, setNewFile] = useState(false);
+  const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (expenseId) {
+      // Fetch existing expense details and populate fields for editing
+      fetchExpenseDetails(expenseId);
+    }
+  }, [expenseId]);
+
+  const fetchExpenseDetails = async (id: string) => {
+    setLoading(true);
+    try {
+      const token=await AsyncStorage.getItem('token');
+      const response = await fetch(`${BASE_URL}/get-expense`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: id }),
+      });
+
+      const json = await response.json();
+      if (json.status && json.data) {
+        const expense = json.data;
+        console.log("Fetched expense details:", expense);
+        setCategory(expense.category);
+        setAmount(expense.amount.toString());
+        setDescription(expense.description);
+        if (expense.receipt) {
+          setReceipt(expense.receipt);
+        }
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error("Error fetching expense details:", err);
+    }
+  };
+  const deleteExpense = async (id: string) => {
+    Alert.alert(
+      "Confirm Delete",
+      "Are you sure you want to delete this expense?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const token=await AsyncStorage.getItem('token');
+              const response = await fetch(`${BASE_URL}/delete-expense`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ id: id }),
+              });
+              const json = await response.json();
+              if (json.status) {
+                Alert.alert("Success", "Expense deleted successfully!", [
+                  { text: "OK", onPress: () => router.push("/list-expense") },
+                ]);
+              } else {
+                Alert.alert("Error", json.message || "Failed to delete expense.");
+              }
+            } catch (err) {
+              console.error("Error deleting expense:", err);
+              Alert.alert("Error", "An error occurred while deleting the expense.");
+            }
+          },
+        },
+      ]
+    );
+  }
   const handleReceiptUpload = async () => {
+    const mediaType =
+    (ImagePicker as any).MediaType?.Image || ImagePicker.MediaTypeOptions.Images;
+
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      mediaTypes: mediaType,
+      allowsEditing: false,
       quality: 0.7,
     });
 
     if (!result.canceled) {
-    //   setReceipt(result.assets[0].uri);
+      const originalUri = result.assets[0].uri;
+      // 👇 Compress + resize before upload
+      const manipulated = await ImageManipulator.manipulateAsync(
+        originalUri,
+        [{ resize: { width: 1000 } }],   // reduce long edge to 1000 px
+        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setReceipt(manipulated.uri);
+      setNewFile(true);
     }
   };
 
-  const handleSubmit = () => {
-    console.log({
-      category,
-      amount,
-      description,
-      receipt,
-    });
+  const uploadToCloudinary = async (imageUri: string) => {
+      try {
+        setUploading(true);
+
+        const data = new FormData();
+        data.append("file", {
+          uri: imageUri,
+          type: "image/jpeg",
+          name: `receipt_${Date.now()}.jpg`,
+        } as any);
+        data.append("upload_preset", UPLOAD_PRESET);
+        data.append("cloud_name", CLOUD_NAME); // ✅ Important for unsigned uploads
+        data.append("folder", "employee_app_receipts"); // optional
+
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+          {
+            method: "POST",
+            body: data,
+            headers: {
+              "Accept": "application/json", // speeds up parsing
+            },
+          }
+        );
+
+        const result = await response.json();
+        console.log("Cloudinary upload result:", result);
+
+        setUploading(false);
+
+        if (result.secure_url) {
+          console.log("✅ Cloudinary upload URL:", result.secure_url);
+          return result.secure_url;
+        } else {
+          console.error("❌ Cloudinary error:", result);
+          throw new Error(result.error?.message || "Upload failed");
+        }
+      } catch (error) {
+        setUploading(false);
+        console.error("Cloudinary upload error:", error);
+        Alert.alert("Error", "Failed to upload receipt. Please try again.");
+        return null;
+      }
+  };
+
+  const handleSubmit = async () => {
+    // disable handleSubmit button
+
+
+    if (!category || !amount || !description) {
+      Alert.alert("Validation Error", "Please fill all required fields.");
+      return;
+    }
+    let receiptUrl = null;
+    if (receipt && newFile) {
+      receiptUrl = await uploadToCloudinary(receipt);
+      if (!receiptUrl) return; // stop if upload failed
+    }else if (!newFile && expenseId) {
+      receiptUrl = receipt; // retain existing URL if not changed
+    }
+    const token=await AsyncStorage.getItem('token');
+    const payload={
+      id:expenseId?expenseId:null,
+      category:category,
+      amount:amount,
+      description:description,
+      receipt: receiptUrl?receiptUrl:"no image",
+    }
+    console.log("Submitting expense:", payload);
     // handle API call here
+    const response=await fetch(`${BASE_URL}/add-expenses`,{
+        method:'POST',
+        headers:{
+          "Content-Type":"application/json",
+          Authorization:`Bearer ${token}`,
+        },
+        body:JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (response.ok) {
+      Alert.alert("Success", "Expense added successfully!", [
+        { text: "OK", onPress: () => router.push("/list-expense") },
+      ]);
+    } else {
+      Alert.alert("Error", data.message || "Failed to add expense.");
+    }
+        
   };
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-        <Feather name="arrow-left" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Expense</Text>
-        <View style={{ width: 24 }} />
-       </View>
+      <KeyboardAvoidingView
+              behavior={"height"}
+              style={{ flex: 1 }}
+              keyboardVerticalOffset={0} // adjust if you have a header
+            >
+        <ScrollView>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()}>
+                  <Feather name="arrow-left" size={24} color="#000" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>{expenseId?'Edit Expense':'Add Expense'}</Text>
+                {
+                  expenseId? 
+                  <TouchableOpacity onPress={() => deleteExpense(expenseId)} disabled={!expenseId}>
+                    <Feather name="trash-2" size={24} color="red" />
+                  </TouchableOpacity>
+                  :<View style={{width:24}}></View>
+                }
+          </View>
+          {
+            loading ? (
+              <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
+            ) : 
+            <>
+            {/* Category Dropdown */}
+            <Text style={[styles.label,{marginTop:15}]}>Category</Text>
+            <View style={styles.pickerBox}>
+              <Picker
+                selectedValue={category}
+                onValueChange={(itemValue) => setCategory(itemValue)}
+              >
+                <Picker.Item label="Select category" value="" />
+                <Picker.Item label="Travel" value="travel" />
+                <Picker.Item label="Food" value="food" />
+                <Picker.Item label="Supplies" value="supplies" />
+              </Picker>
+            </View>
 
-      {/* Category Dropdown */}
-      <Text style={styles.label}>Category</Text>
-      <View style={styles.pickerBox}>
-        <Picker
-          selectedValue={category}
-          onValueChange={(itemValue) => setCategory(itemValue)}
-        >
-          <Picker.Item label="Select category" value="" />
-          <Picker.Item label="Travel" value="travel" />
-          <Picker.Item label="Food" value="food" />
-          <Picker.Item label="Supplies" value="supplies" />
-        </Picker>
-      </View>
+            {/* Amount */}
+            <Text style={styles.label}>Amount</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="0.00"
+              keyboardType="numeric"
+              value={amount}
+              onChangeText={setAmount}
+            />
 
-      {/* Amount */}
-      <Text style={styles.label}>Amount</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="0.00"
-        keyboardType="numeric"
-        value={amount}
-        onChangeText={setAmount}
-      />
+            {/* Description */}
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Enter description"
+              multiline
+              numberOfLines={3}
+              value={description}
+              onChangeText={setDescription}
+            />
 
-      {/* Description */}
-      <Text style={styles.label}>Description</Text>
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        placeholder="Enter description"
-        multiline
-        numberOfLines={3}
-        value={description}
-        onChangeText={setDescription}
-      />
+            {/* Receipt */}
+            <Text style={styles.label}>Receipt (optional)</Text>
+            <View style={styles.profileSection}>
+            <View style={styles.profileImageWrapper}>
+              {
+                  visible ? (
+                    <ImageView
+                      images={[{ uri: receipt }]}
+                      imageIndex={0}
+                      onRequestClose={() => setIsVisible(false)}
+                      visible={visible}
+                      backgroundColor="black"
+                    />
+                  ) : <TouchableOpacity onPress={() => { setIsVisible(true) }}>
+                    <Image
+                      source={{ uri: receipt }}
+                      style={styles.profileImage}
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>                  
+                }
+                <TouchableOpacity onPress={handleReceiptUpload} style={styles.cameraIcon}>
+                  <Ionicons name="camera" size={16} color="#ffffffff" />
+                </TouchableOpacity>
+            </View>
+            </View>
+            {/* Submit Button */}
+            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={uploading}>
+              <Text style={styles.submitText}>{uploading ? "Uploading..." : (expenseId?'Update Expense':'Submit Expense')}</Text>
+            </TouchableOpacity>
+            </>
+          }
+          
 
-      {/* Receipt */}
-      <Text style={styles.label}>Receipt</Text>
-      <TouchableOpacity style={styles.uploadBox} onPress={handleReceiptUpload}>
-        {receipt ? (
-          <Image source={{ uri: receipt }} style={styles.receiptImage} />
-        ) : (
-          <Text style={styles.uploadText}>📷 Take Photo or Upload</Text>
-        )}
-      </TouchableOpacity>
-
-      {/* Submit Button */}
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitText}>Submit Expense</Text>
-      </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -166,5 +383,26 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  profileImage: {
+    width: 150,
+    height: 80,
+    backgroundColor: "#f0f0f0",
+  },
+  cameraIcon: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#333",
+    borderRadius: 20,
+    padding: 6,
+  },
+  profileSection: {
+    alignItems: "center",
+    marginVertical: 20,
+  },
+  profileImageWrapper: {
+    position: "relative",
+
   },
 });

@@ -1,30 +1,68 @@
+import { BASE_URL } from "@/src/config";
+import { setExpenseId } from "@/src/idSlice";
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React from "react";
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDispatch } from "react-redux";
 
-const expenses = [
-  {
-    id: "1",
-    title: "Travel to Client Site",
-    location: "ABC Corp Office",
-    date: "Jan 15, 2025 - 2:00 PM",
-    amount: "$150.00",
-    status: "Pending",
-  },
-  {
-    id: "2",
-    title: "Lunch Meeting",
-    location: "Downtown Project Site",
-    date: "Jan 14, 2025 - 10:00 AM",
-    amount: "$200.00",
-    status: "Approved",
-  },
-];
+type Expense = {
+  id: string;
+  category: string;
+  description: string;
+  created_at: string;
+  amount: string;
+  status: "pending" | "approved" | "rejected" | string; // extendable
+};
 
 export default function ListExpense() {
+  const dispatch = useDispatch();
   const router = useRouter();
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
+  
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchExpenses();
+    setRefreshing(false);
+  };
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",  // Jan, Feb, Mar...
+      day: "2-digit",  // 01, 02, ...
+      year: "numeric",
+    });
+  };
+
+  const fetchExpenses = async () => {
+    try {
+      const token=await AsyncStorage.getItem('token');
+      const response = await fetch(`${BASE_URL}/expenses`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const json = await response.json();
+      if (json.status && json.data) {
+        setExpenses(json.data);
+      }
+    } catch (err) {
+      console.error("API error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -33,30 +71,57 @@ export default function ListExpense() {
         <TouchableOpacity onPress={() => router.back()}>
           <Feather name="arrow-left" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Expense Lists</Text>
-        <TouchableOpacity onPress={() => router.push("/add-expense")}>
+        <Text style={styles.headerTitle}>Expense List</Text>
+        <TouchableOpacity onPress={() => {
+          dispatch(setExpenseId(null));
+          router.push("/add-expense");
+        }}>
           <Feather name="plus" size={24} color="#000" />
         </TouchableOpacity>
       </View>
 
       {/* Expense List */}
-      <FlatList
-        data={expenses}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card}>
-            <View style={styles.cardRow}>
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              <View style={[styles.statusBadge, item.status === "Pending" ? styles.scheduled : styles.completed]}>
-                <Text style={styles.statusText}>{item.status}</Text>
+      {loading ? (
+          <ActivityIndicator size="large" color="#000" style={{ marginTop: 20 }} />
+        ) : expenses.length === 0 ? (
+                // 👇 No data image
+            <ScrollView
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+            >
+                <View style={{ alignItems: "center", marginTop: 80 }}>
+                  <Image
+                    source={require("../../assets/images/no-data.png")}
+                    style={{ width: 150, height: 150, resizeMode: "contain" }}
+                  />
+                </View>
+          </ScrollView>
+              ) : (
+        <FlatList<Expense>
+          refreshing={refreshing}
+          onRefresh={onRefresh} // 👈 pull-to-refresh built-in
+          contentContainerStyle={{ paddingBottom: 20 }}
+          data={expenses}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.card} onPress={()=>{
+              dispatch(setExpenseId(item.id));
+              router.push("/add-expense");
+            }}>
+              <View style={styles.cardRow}>
+                <Text style={styles.cardTitle}>{item.category}</Text>
+                <View style={[styles.statusBadge, item.status === "rejected" ? styles.rejected : styles.completed]}>
+                  <Text style={styles.statusText}>{item.status}</Text>
+                </View>
               </View>
-            </View>
-            <Text style={styles.cardSubtitle}>{item.location}</Text>
-            <Text style={styles.cardDate}>{item.date}</Text>
-            <Text style={styles.arrow}>{item.amount}</Text>
-          </TouchableOpacity>
-        )}
-      />
+              <Text style={styles.cardSubtitle}>{item.description}</Text>
+              <Text style={styles.cardDate}>{formatDate(item.created_at)}</Text>
+              <Text style={styles.arrow}>{item.amount} INR</Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -71,6 +136,7 @@ const styles = StyleSheet.create({
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
   scheduled: { backgroundColor: "#E6F0FF" },
   completed: { backgroundColor: "#E6FFE9" },
+  rejected: { backgroundColor: "#efa3a3ff" },
   statusText: { fontSize: 12, fontWeight: "600", color: "#333" },
   cardSubtitle: { fontSize: 14, color: "#555", marginBottom: 4 },
   cardDate: { fontSize: 13, color: "#777" },

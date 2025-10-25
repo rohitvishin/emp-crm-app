@@ -1,20 +1,138 @@
+import { RootState } from "@/src";
+import { BASE_URL } from "@/src/config";
+import { startLocationTracking, stopLocationTracking } from "@/src/location";
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSelector } from "react-redux";
 
 export default function VisitDetailScreen() {
   const [isStarted, setIsStarted] = useState(false);
+  const [isCheckIn, setIsCheckedIn] = useState(false);
+  const [isCheckOut, setIsCheckedOut] = useState(false);
+  const [showButton, setShowButton] = useState(false);
+  const [visitId, setVisitId] = useState(0);
   const router = useRouter();
-  const handleVisitToggle = () => {
-    if (isStarted) {
-      // End Visit → go to Report screen
-      router.push("/report-visit");
-    } else {
-      // Start Visit → just toggle state
-      setIsStarted(true);
+  const visit=useSelector((state: RootState) => state.visit.selectedVisit)
+  useEffect(()=>{
+    updateVisit(visit)
+  });
+
+  const updateVisit=async (visit:any)=>{
+    console.log(visit.meeting_latitude);
+    setVisitId(visit.id);
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const response = await fetch(`${BASE_URL}/visit-detail`, {
+        method: "POST",
+        headers: {
+          "Content-Type":"application/json",
+          Authorization:`Bearer ${token}`,
+        },
+        body:JSON.stringify({visit_id:visit.id})
+      });
+
+      const data = await response.json();
+      if (response.ok && data.visit) {
+        console.log("Visit detail data:", data.visit);
+        if(data.other_active_visit == false){
+          setShowButton(true);
+        }
+        if(data.visit.started_visit_at){
+          setIsStarted(true)
+          if(!data.visit.check_in_time){
+            // ensureBackgroundTracking(); // when visit is started but not reached location, start location tracking
+          }
+        }
+        if(data.visit.check_in_time){
+          setIsCheckedIn(true)
+        }
+        if(data.visit.check_out_time){
+          setIsCheckedOut(true)
+        }
+      }
+    } catch (error) {
+      console.log("Error fetching visit details:", error);
     }
+    
+  }
+
+  if (!visit) {
+    return (
+      <SafeAreaView>
+        <Text>No visit selected</Text>
+      </SafeAreaView>
+    );
+  }
+  const openMap = () => {
+    const latitude = visit.meeting_latitude;
+    const longitude = visit.meeting_longitude;
+    const label = "Client Location";
+    const url =`geo:${latitude},${longitude}?q=${latitude},${longitude}(${label})`
+    Linking.openURL(url).catch(() =>
+      alert("Unable to open maps. Please check your device settings.")
+    );
+  };
+  const handleVisitToggle = async () => {
+     Alert.alert(
+      "Confirm Action",
+      `Are you sure ?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Yes",
+          onPress: async () => {
+              try{
+                  let actionType = "";
+                    if (!isStarted) {
+                      setIsStarted(true);
+                      actionType = "start_visit";
+                      await AsyncStorage.setItem('visitId',String(visitId));
+                      startLocationTracking();
+                    } else if (isStarted && !isCheckIn) {
+                      setIsCheckedIn(true);
+                      actionType = "reached_at";
+                      stopLocationTracking();
+                      await AsyncStorage.removeItem('visitId');
+                    } else if (isStarted && isCheckIn && !isCheckOut) {
+                      setIsCheckedOut(true);
+                      actionType = "meeting_end";
+                    }
+
+                    if (actionType !== "") {
+                      const payload={
+                        action_type:actionType,
+                        visit_id:visitId,
+                      }
+                      const token=await AsyncStorage.getItem('token');
+                      const response=await fetch(`${BASE_URL}/update-visit`,{
+                          method:'POST',
+                          headers:{
+                            "Content-Type":"application/json",
+                            Authorization:`Bearer ${token}`,
+                          },
+                          body:JSON.stringify(payload)
+                      });
+                      const data = await response.json();
+                      if (response.ok) {
+                        if (actionType === "meeting_end") {
+                          // End Visit → go to Report screen
+                          router.push("/report-visit");
+                        }
+                      } else {
+                        Alert.alert("Error", data.message || "Failed to update visit");
+                      }
+                  }
+                }catch (error) {
+                  console.error(error);
+                  Alert.alert("Error", "Something went wrong while updating visit");
+                }
+          }
+        }
+      ]);
   };
   return (
     <SafeAreaView style={styles.container}>
@@ -29,53 +147,50 @@ export default function VisitDetailScreen() {
 
       {/* Client Info */}
       <View style={styles.card}>
-        <Text style={styles.label}>Client Name</Text>
+        <Text style={styles.label}>Client Info</Text>
         <View style={styles.clientRow}>
           <Feather name="user" size={32} color="#666" />
           <View style={{ marginLeft: 10 }}>
-            <Text style={styles.clientName}>John Anderson</Text>
-            <Text style={styles.clientType}>Premium Client</Text>
+            <Text style={styles.clientName}>Client: {visit.customer?visit.customer:''}</Text>
+            <Text style={styles.clientType}>Visit Status: {isCheckIn ? (isCheckOut ? "Completed" : "Reached Location") : (isStarted? "Ongoing":"Pending")}</Text>
           </View>
         </View>
       </View>
 
       {/* Client Address */}
       <View style={styles.card}>
-        <Text style={styles.label}>Client Address</Text>
-        <Text style={styles.text}>1234 Business Avenue</Text>
-        <Text style={styles.text}>Suite 567, Floor 12</Text>
-        <Text style={styles.text}>New York, NY 10001</Text>
+        <Text style={styles.label}>Visit Detail</Text>
+        <Text style={styles.text}>Purpose: {visit.purpose?visit.purpose:''}</Text>
+        <Text style={styles.text}>Date & Time: {visit.visit_start_time?visit.visit_start_time:''}</Text>
+        <Text style={styles.text}>Notes: {visit.notes?visit.notes:''}</Text>
       </View>
 
       {/* Client Location */}
-      <View style={styles.card}>
-        <Text style={styles.label}>Client Location</Text>
-        <View style={styles.mapView}>
-          <Feather name="map-pin" size={28} color="#fff" />
-          <Text style={styles.mapText}>Map View</Text>
-          <Text style={styles.mapCoords}>40.7128° N, 74.0060° W</Text>
+      {showButton && !isCheckOut && (
+        <View>
+          <View style={styles.card}>
+            <Text style={styles.label}>Meeting Location: {visit.location?visit.location:''}</Text>
+            <TouchableOpacity onPress={openMap} style={styles.mapView}>
+              <Feather name="map-pin" size={28} color="#fff" />
+              <Text style={styles.mapText}>Get Direction</Text>
+              <Text style={styles.mapCoords}>{visit.meeting_latitude?visit.meeting_latitude:''}°, {visit.meeting_longitude?visit.meeting_longitude:''}°</Text>
+            </TouchableOpacity>
         </View>
-      </View>
-
-      {/* Distance + Time */}
-      <View style={styles.cardRow}>
-        <View style={styles.rowItem}>
-          <Feather name="navigation" size={16} color="#555" />
-          <Text style={styles.rowLabel}>Distance</Text>
-          <Text style={styles.rowValue}>2.3 km</Text>
+        <TouchableOpacity style={styles.startBtn} onPress={handleVisitToggle}>
+          <Feather name="play" size={18} color="#fff" />
+          <Text style={styles.startBtnText}>
+            {isStarted ? (isCheckIn ? "End Meeting" : "Reached Location") : "Start Visit"}
+          </Text>
+        </TouchableOpacity>
         </View>
-        <View style={styles.rowItem}>
-          <Feather name="clock" size={16} color="#555" />
-          <Text style={styles.rowLabel}>Est. Travel Time</Text>
-          <Text style={styles.rowValue}>8 mins</Text>
-        </View>
-      </View>
-
-      {/* Start Visit Button */}
-      <TouchableOpacity style={styles.startBtn} onPress={handleVisitToggle}>
-        <Feather name="play" size={18} color="#fff" />
-        <Text style={styles.startBtnText}>{isStarted ? "End Visit" : "Start Visit"}</Text>
-      </TouchableOpacity>
+      )}
+      {isCheckOut && (
+        <TouchableOpacity style={styles.ViewReportBtn} onPress={()=>router.push('/report-visit')}>
+          <Text style={styles.ViewReportText}>
+            Check Reports
+          </Text>
+        </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
 }
@@ -125,7 +240,8 @@ const styles = StyleSheet.create({
   },
   clientType: {
     fontSize: 13,
-    color: "#777",
+    fontWeight: "500",
+    color: "#438819ff",
   },
   text: {
     fontSize: 14,
@@ -172,6 +288,25 @@ const styles = StyleSheet.create({
   },
   startBtnText: {
     color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 6,
+  },
+  ViewReportBtn: {
+    width: 200,
+    flexDirection: "row",
+    marginLeft:'auto',
+    marginRight:'auto',
+    marginTop:20,
+    borderBlockColor:'#444',
+    borderWidth:2,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ViewReportText: {
+    color: "#444",
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 6,

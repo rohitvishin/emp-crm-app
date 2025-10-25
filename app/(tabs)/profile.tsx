@@ -1,11 +1,17 @@
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { BASE_URL } from "@/src/config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 const ProfileScreen = () => {
   const router = useRouter();
+  const [fullname, setName] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [email, setEmail] = useState("");
+  const [department, setDepartment] = useState("");
+  const [manager, setManager] = useState("");
+
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem("token");
@@ -14,8 +20,44 @@ const ProfileScreen = () => {
       console.error("Logout error:", error);
     }
   };
+  
+  useEffect(() => {
+      getProfile();
+  }, []);
+
+  const getProfile = async () => {
+  try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        console.log("No token found");
+        return;
+      }
+
+      const response = await fetch(`${BASE_URL}/user`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result?.data) {
+        setManager(result.data.manager.name); // ✅ works
+        setDepartment(result.data.department.name); // ✅ works
+        setName(result.data.name);
+        setMobile(result.data.mobile);
+        setEmail(result.data.email);
+      } else {
+        console.error("Error fetching visits:", result);
+      }
+    } catch (error) {
+      console.error("Fetch visits error:", error);
+    } 
+  }
   return (
     <SafeAreaView style={styles.container}>
+      <ScrollView>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Profile</Text>
@@ -25,12 +67,12 @@ const ProfileScreen = () => {
       <View style={styles.profileSection}>
         <View style={styles.profileImageWrapper}>
           <Image
-            source={{ uri: "https://cdn-icons-png.flaticon.com/512/2922/2922510.png" }}
+            source={require("../../assets/images/profile-pic.png")}
             style={styles.profileImage}
           />
-          <TouchableOpacity style={styles.cameraIcon}>
+          {/* <TouchableOpacity style={styles.cameraIcon}>
             <Ionicons name="camera" size={16} color="#fff" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
 
@@ -38,40 +80,41 @@ const ProfileScreen = () => {
       <View style={styles.infoSection}>
         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.label}>Full Name</Text>
-          <Text style={styles.value}>John Michael Smith</Text>
-          <MaterialIcons name="chevron-right" size={22} color="#aaa" />
+          <Text style={styles.value}>{fullname}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.label}>Mobile</Text>
-          <Text style={styles.value}>+1 (555) 123-4567</Text>
-          <MaterialIcons name="chevron-right" size={22} color="#aaa" />
+          <Text style={styles.value}>{mobile}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.label}>Email</Text>
-          <Text style={styles.value}>john.smith@company.com</Text>
-          <MaterialIcons name="chevron-right" size={22} color="#aaa" />
+          <Text style={styles.value}>{email}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.label}>Department</Text>
-          <Text style={styles.value}>Engineering</Text>
-          <MaterialIcons name="chevron-right" size={22} color="#aaa" />
+          <Text style={styles.value}>{department?department:''}</Text>
+          {/* <MaterialIcons name="chevron-right" size={22} color="#aaa" /> */}
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.infoCard}>
           <Text style={styles.label}>Reporting Manager</Text>
           <View style={styles.managerRow}>
-            <Text style={styles.value}>Sarah Johnson</Text>
+            <Text style={styles.value}>{manager?manager:''}</Text>
           </View>
-          <MaterialIcons name="chevron-right" size={22} color="#aaa" />
         </TouchableOpacity>
+        {/* <TouchableOpacity onPress={()=>router.push("/change-password")} style={styles.infoCard}>
+          <Text style={styles.value}>Change Password</Text>
+          <MaterialIcons name="chevron-right" size={22} color="#aaa" />
+        </TouchableOpacity> */}
         {/* Logout */}
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
       </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -104,8 +147,8 @@ const styles = StyleSheet.create({
   profileImage: {
     width: 90,
     height: 90,
-    borderRadius: 45,
-    backgroundColor: "#f0f0f0",
+    borderRadius: 0,
+    // backgroundColor: "#f0f0f0",
   },
   cameraIcon: {
     position: "absolute",
@@ -151,7 +194,7 @@ const styles = StyleSheet.create({
     height: 25,
     borderRadius: 12,
   },
-  logoutBtn: { marginTop: 20, padding: 12, backgroundColor: "#000", borderRadius: 8, alignItems: "center" },
+  logoutBtn: { marginBottom:20,marginTop: 20, padding: 12, backgroundColor: "#000", borderRadius: 8, alignItems: "center" },
   logoutText: { color: "#fff", fontWeight: "600" },
 });
 
