@@ -1,11 +1,13 @@
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as IntentLauncher from "expo-intent-launcher";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, Image, KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BASE_URL } from "../src/config";
+
 
 export default function LoginScreen() {
   const [mobile, setMobile] = useState("");
@@ -21,26 +23,55 @@ export default function LoginScreen() {
         if (token) {
           // If token already saved, redirect to Home
           router.replace("/home");
-        }
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permission to access location was denied");
-          return;
-        }
-      
-        const servicesEnabled = await Location.hasServicesEnabledAsync();
-        if (!servicesEnabled) {
-          // show custom popup
+        }else{
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== "granted") {
+            Alert.alert("Permission to access location was denied");
+            return;
+          }
+        
+          const servicesEnabled = await Location.hasServicesEnabledAsync();
+          if (!servicesEnabled) {
+            // show custom popup
+            Alert.alert(
+              "Location Required",
+              "Please enable location services (GPS) in your settings."
+            );
+          }
+        
+          const bgStatus = await Location.requestBackgroundPermissionsAsync();
+          if (bgStatus.status !== "granted") {
+            Alert.alert("Background permission denied");
+            return;
+          }
           Alert.alert(
-            "Location Required",
-            "Please enable location services (GPS) in your settings."
+            "Disable Battery Optimization",
+            "To ensure your visits and location are tracked correctly in the background:\n\n" +
+              "1️⃣ Open your phone settings.\n" +
+              "2️⃣ Tap on 'Battery' or 'Battery Optimization'.\n" +
+              "3️⃣ Find and select this app (Employee App).\n" +
+              "4️⃣ Choose 'Don’t optimize' or 'Allow background activity'.\n\n" +
+              "This prevents Android from stopping background tracking automatically.",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+              },
+              {
+                text: "Open Settings",
+                onPress: async () => {
+                  try {
+                    await IntentLauncher.startActivityAsync(
+                      IntentLauncher.ActivityAction.IGNORE_BATTERY_OPTIMIZATION_SETTINGS
+                    );
+                  } catch (error) {
+                    console.error("Error opening battery optimization settings:", error);
+                    Alert.alert("Error", "Unable to open battery optimization settings.");
+                  }
+                },
+              },
+            ]
           );
-        }
-      
-        const bgStatus = await Location.requestBackgroundPermissionsAsync();
-        if (bgStatus.status !== "granted") {
-          Alert.alert("Background permission denied");
-          return;
         }
       } catch (error) {
         console.error("Token check error:", error);

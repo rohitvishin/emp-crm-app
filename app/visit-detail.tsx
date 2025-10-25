@@ -1,6 +1,6 @@
 import { RootState } from "@/src";
 import { BASE_URL } from "@/src/config";
-import { ensureBackgroundTracking, startLocationTracking, stopLocationTracking } from "@/src/location";
+import { startLocationTracking, stopLocationTracking } from "@/src/location";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -44,7 +44,7 @@ export default function VisitDetailScreen() {
         if(data.visit.started_visit_at){
           setIsStarted(true)
           if(!data.visit.check_in_time){
-            ensureBackgroundTracking(); // when visit is started but not reached location, start location tracking
+            // ensureBackgroundTracking(); // when visit is started but not reached location, start location tracking
           }
         }
         if(data.visit.check_in_time){

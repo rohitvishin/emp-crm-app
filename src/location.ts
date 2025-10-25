@@ -1,82 +1,47 @@
-import * as IntentLauncher from "expo-intent-launcher";
 import * as Location from "expo-location";
+import * as Notifications from 'expo-notifications';
 import { Alert } from "react-native";
 import { LOCATION_TASK_NAME } from "../background/locationTask";
 
-export async function ensureBackgroundTracking(){
-  try {
-    // Check if location updates are already running
-    const isRegistered = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
-
-    if (!isRegistered) {
-      console.log("📍 Restarting background tracking...");
-      await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: 60000, // 1 minute
-          distanceInterval: 50, // 50 m
-          pausesUpdatesAutomatically: false,
-          foregroundService: {
-            notificationTitle: "Tracking Location",
-            notificationBody: "Updating your location in the background",
-            notificationColor: "#764ba2"
-          },
-          mayShowUserSettingsDialog: true,
-      });
-      console.log("✅ Background tracking resumed");
-    } else {
-      console.log("📍 Background tracking already active");
-    }
-  } catch (error) {
-    console.error("⚠️ Error ensuring background tracking:", error);
-  }
-};
 export async function startLocationTracking() {
   try {
+    let { status: notifStatus } = await Notifications.requestPermissionsAsync();
+    if (notifStatus != 'granted') {
+      Alert.alert("Permission required", "Please allow notification to continue.");
+      return;
+    }
     // 1️⃣ Make sure permissions are granted
-    const fg = await Location.requestForegroundPermissionsAsync();
-    if (fg.status !== "granted") {
-      Alert.alert("Permission required", "Please allow location access to continue.");
+    const { status: fg } = await Location.requestForegroundPermissionsAsync();
+    if (fg !== "granted") {
+      Alert.alert("Location permission not granted");
       return;
     }
 
     const { status: bg } = await Location.requestBackgroundPermissionsAsync();
     if (bg !== "granted") {
-      Alert.alert(
-        "Background Access Needed",
-        "Please allow background location in settings for continuous tracking."
-      );
+      Alert.alert("Background location denied");
       return;
     }
-      try {
-        const pkg = "com.rohitvish.employeeapp";
-        await IntentLauncher.startActivityAsync(
-          IntentLauncher.ActivityAction.IGNORE_BATTERY_OPTIMIZATION_SETTINGS,
-          { data: `package:${pkg}` }
-        );
-        console.log("✅ Prompted user to disable battery optimization");
-      } catch (e) {
-        console.log("Battery optimization settings not available:", e);
-      }
+
     // 2️⃣ Check if already running
     const alreadyRunning = await Location.hasStartedLocationUpdatesAsync(
       LOCATION_TASK_NAME
     );
 
     if (alreadyRunning) {
-      console.log("✅ Background location already running");
-      return;
+      await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);   
+      console.log("closing active background update");
     }
 
     // 3️⃣ Start updates
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-      accuracy: Location.Accuracy.Balanced,
-      timeInterval: 60000, // 1 minute
-      distanceInterval: 50, // 50 m
+      accuracy: Location.Accuracy.Low,
+      timeInterval: 30000, // 30 seconds
+      distanceInterval: 10, // 10 m
       pausesUpdatesAutomatically: false,
       foregroundService: {
         notificationTitle: "Tracking Location",
-        notificationBody: "Updating your location in background",
-        notificationColor: "#764ba2"
+        notificationBody: "Updating your location in the background",
       },
       mayShowUserSettingsDialog: true,
     });

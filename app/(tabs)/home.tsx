@@ -41,6 +41,7 @@ export default function HomeScreen() {
     { id: "3", title: "Leave Requests", icon: "calendar", route: "/list-leave" },
   ];
   useFocusEffect(
+    
     useCallback(() => {
       fetchDashboardData(); // Runs every time user visits the screen
     }, [])
@@ -57,6 +58,7 @@ export default function HomeScreen() {
   };
 
   const checkPermissions = async () => {
+  
   const { status } = await Location.getForegroundPermissionsAsync();
 
   if (status !== "granted") {
