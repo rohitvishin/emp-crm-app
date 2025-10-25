@@ -46,10 +46,7 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
         },
       ],
     };
-
-    // ✅ Use Promise.race with timeout to prevent hanging
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    console.log(payload);
 
     const res = await fetch(`${BASE_URL}/updateVisitRoute`, {
       method: "POST",
@@ -58,10 +55,7 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
         Authorization: `Bearer ${currentToken}`,
       },
       body: JSON.stringify(payload),
-      signal: controller.signal,
     });
-
-    clearTimeout(timeout);
 
     if (!res.ok) {
       console.log("❌ Failed to update route:", res.status);
