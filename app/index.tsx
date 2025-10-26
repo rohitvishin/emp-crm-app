@@ -1,6 +1,5 @@
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as IntentLauncher from "expo-intent-launcher";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -44,34 +43,6 @@ export default function LoginScreen() {
             Alert.alert("Background permission denied");
             return;
           }
-          Alert.alert(
-            "Disable Battery Optimization",
-            "To ensure your visits and location are tracked correctly in the background:\n\n" +
-              "1️⃣ Open your phone settings.\n" +
-              "2️⃣ Tap on 'Battery' or 'Battery Optimization'.\n" +
-              "3️⃣ Find and select this app (Employee App).\n" +
-              "4️⃣ Choose 'Don’t optimize' or 'Allow background activity'.\n\n" +
-              "This prevents Android from stopping background tracking automatically.",
-            [
-              {
-                text: "Cancel",
-                style: "cancel",
-              },
-              {
-                text: "Open Settings",
-                onPress: async () => {
-                  try {
-                    await IntentLauncher.startActivityAsync(
-                      IntentLauncher.ActivityAction.IGNORE_BATTERY_OPTIMIZATION_SETTINGS
-                    );
-                  } catch (error) {
-                    console.error("Error opening battery optimization settings:", error);
-                    Alert.alert("Error", "Unable to open battery optimization settings.");
-                  }
-                },
-              },
-            ]
-          );
         }
       } catch (error) {
         console.error("Token check error:", error);
