@@ -1,19 +1,55 @@
+import { registerForPushNotificationsAsync } from "@/src/notifications";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from "expo-location";
+import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Alert, Image, KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BASE_URL } from "../src/config";
 
-
 export default function LoginScreen() {
+  
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const [expoPushToken, setExpoPushToken] = useState("");
+  const notificationListener = useRef<Notifications.Subscription | null>(null);
+  const responseListener = useRef<Notifications.Subscription | null>(null);
+  
+  useEffect(() => {
+    // Request permission and get token
+    registerForPushNotificationsAsync().then(async token => {
+      if (token){
+        setExpoPushToken(token);
+      }
+    });
 
+    // Foreground notification listener
+    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+      console.log("Notification received in foreground:", notification);
+    });
+
+    // When user taps on notification
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log("Notification clicked:", response);
+      // Navigate based on data here (example: router.push("/field-visits"))
+    });
+
+    return () => {
+      // remove listeners using the subscription's remove() method if present
+      if (notificationListener.current) {
+        notificationListener.current.remove();
+        notificationListener.current = null;
+      }
+      if (responseListener.current) {
+        responseListener.current.remove();
+        responseListener.current = null;
+      }
+    };
+  }, []);
   useEffect(() => {
     const checkLogin = async () => {
       console.log("checking login")
@@ -69,6 +105,7 @@ export default function LoginScreen() {
           body: JSON.stringify({
             mobile: mobile,
             password: password,
+            FCM_token: expoPushToken,
           }),
         });
 

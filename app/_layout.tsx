@@ -3,9 +3,9 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Provider } from "react-redux";
+
 export default function RootLayout() {
   const insets = useSafeAreaInsets();
-
   return (
     <Provider store={store}>
       <SafeAreaProvider>

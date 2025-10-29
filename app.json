@@ -13,6 +13,7 @@
       "bundleIdentifier": "com.rohitvish.employeeapp"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -29,6 +30,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
+      "useNextNotificationsApi": true,
       "package": "com.rohitvish.employeeapp"
     },
     "web": {
@@ -42,6 +44,14 @@
           "locationAlwaysAndWhenInUsePermission": "Allow this app to access your location even in the background.",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
+        },
+      ],
+      [
+      "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#764ba2",
+          "mode": "default"
         }
       ],
       "expo-router",
